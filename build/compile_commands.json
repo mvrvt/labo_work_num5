@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build",
+  "command": "/usr/bin/clang++  -I\"/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src\" -isystem /opt/homebrew/include  -Wall -Wextra -Wpedantic -g -std=gnu++17 -arch arm64 -o CMakeFiles/SpaceSimulation.dir/main.cpp.o -c \"/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/main.cpp\"",
+  "file": "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/main.cpp",
+  "output": "CMakeFiles/SpaceSimulation.dir/main.cpp.o"
+},
+{
+  "directory": "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build",
+  "command": "/usr/bin/clang++  -I\"/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src\" -isystem /opt/homebrew/include  -Wall -Wextra -Wpedantic -g -std=gnu++17 -arch arm64 -o CMakeFiles/SpaceSimulation.dir/src/Vector.cpp.o -c \"/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Vector.cpp\"",
+  "file": "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Vector.cpp",
+  "output": "CMakeFiles/SpaceSimulation.dir/src/Vector.cpp.o"
+},
+{
+  "directory": "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build",
+  "command": "/usr/bin/clang++  -I\"/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src\" -isystem /opt/homebrew/include  -Wall -Wextra -Wpedantic -g -std=gnu++17 -arch arm64 -o CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o -c \"/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Planet.cpp\"",
+  "file": "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Planet.cpp",
+  "output": "CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o"
+}
+]

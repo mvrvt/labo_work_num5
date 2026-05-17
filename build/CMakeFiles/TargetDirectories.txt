@@ -1,0 +1,3 @@
+/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles/SpaceSimulation.dir
+/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles/edit_cache.dir
+/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles/rebuild_cache.dir
