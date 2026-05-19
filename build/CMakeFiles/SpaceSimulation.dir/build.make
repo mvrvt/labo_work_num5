@@ -114,11 +114,56 @@ CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.s"
 	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Planet.cpp" -o CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.s
 
+CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o: CMakeFiles/SpaceSimulation.dir/flags.make
+CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o: /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/SpaceShip.cpp
+CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o: CMakeFiles/SpaceSimulation.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o -MF CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o.d -o CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o -c "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/SpaceShip.cpp"
+
+CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.i"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/SpaceShip.cpp" > CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.i
+
+CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.s"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/SpaceShip.cpp" -o CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.s
+
+CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o: CMakeFiles/SpaceSimulation.dir/flags.make
+CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o: /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Simulation.cpp
+CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o: CMakeFiles/SpaceSimulation.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o -MF CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o.d -o CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o -c "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Simulation.cpp"
+
+CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.i"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Simulation.cpp" > CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.i
+
+CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.s"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Simulation.cpp" -o CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.s
+
+CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o: CMakeFiles/SpaceSimulation.dir/flags.make
+CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o: /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Renderer.cpp
+CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o: CMakeFiles/SpaceSimulation.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o -MF CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o.d -o CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o -c "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Renderer.cpp"
+
+CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.i"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Renderer.cpp" > CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.i
+
+CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.s"
+	/usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Renderer.cpp" -o CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.s
+
 # Object files for target SpaceSimulation
 SpaceSimulation_OBJECTS = \
 "CMakeFiles/SpaceSimulation.dir/main.cpp.o" \
 "CMakeFiles/SpaceSimulation.dir/src/Vector.cpp.o" \
-"CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o"
+"CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o" \
+"CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o" \
+"CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o" \
+"CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o"
 
 # External object files for target SpaceSimulation
 SpaceSimulation_EXTERNAL_OBJECTS =
@@ -126,12 +171,15 @@ SpaceSimulation_EXTERNAL_OBJECTS =
 SpaceSimulation: CMakeFiles/SpaceSimulation.dir/main.cpp.o
 SpaceSimulation: CMakeFiles/SpaceSimulation.dir/src/Vector.cpp.o
 SpaceSimulation: CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o
+SpaceSimulation: CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o
+SpaceSimulation: CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o
+SpaceSimulation: CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o
 SpaceSimulation: CMakeFiles/SpaceSimulation.dir/build.make
 SpaceSimulation: /opt/homebrew/lib/libsfml-graphics.3.0.2.dylib
 SpaceSimulation: /opt/homebrew/lib/libsfml-window.3.0.2.dylib
 SpaceSimulation: /opt/homebrew/lib/libsfml-system.3.0.2.dylib
 SpaceSimulation: CMakeFiles/SpaceSimulation.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable SpaceSimulation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable SpaceSimulation"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/SpaceSimulation.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

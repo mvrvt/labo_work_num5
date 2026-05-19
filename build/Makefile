@@ -177,6 +177,78 @@ src/Planet.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.s
 .PHONY : src/Planet.cpp.s
 
+src/Renderer.o: src/Renderer.cpp.o
+.PHONY : src/Renderer.o
+
+# target to build an object file
+src/Renderer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o
+.PHONY : src/Renderer.cpp.o
+
+src/Renderer.i: src/Renderer.cpp.i
+.PHONY : src/Renderer.i
+
+# target to preprocess a source file
+src/Renderer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.i
+.PHONY : src/Renderer.cpp.i
+
+src/Renderer.s: src/Renderer.cpp.s
+.PHONY : src/Renderer.s
+
+# target to generate assembly for a file
+src/Renderer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.s
+.PHONY : src/Renderer.cpp.s
+
+src/Simulation.o: src/Simulation.cpp.o
+.PHONY : src/Simulation.o
+
+# target to build an object file
+src/Simulation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o
+.PHONY : src/Simulation.cpp.o
+
+src/Simulation.i: src/Simulation.cpp.i
+.PHONY : src/Simulation.i
+
+# target to preprocess a source file
+src/Simulation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.i
+.PHONY : src/Simulation.cpp.i
+
+src/Simulation.s: src/Simulation.cpp.s
+.PHONY : src/Simulation.s
+
+# target to generate assembly for a file
+src/Simulation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.s
+.PHONY : src/Simulation.cpp.s
+
+src/SpaceShip.o: src/SpaceShip.cpp.o
+.PHONY : src/SpaceShip.o
+
+# target to build an object file
+src/SpaceShip.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o
+.PHONY : src/SpaceShip.cpp.o
+
+src/SpaceShip.i: src/SpaceShip.cpp.i
+.PHONY : src/SpaceShip.i
+
+# target to preprocess a source file
+src/SpaceShip.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.i
+.PHONY : src/SpaceShip.cpp.i
+
+src/SpaceShip.s: src/SpaceShip.cpp.s
+.PHONY : src/SpaceShip.s
+
+# target to generate assembly for a file
+src/SpaceShip.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.s
+.PHONY : src/SpaceShip.cpp.s
+
 src/Vector.o: src/Vector.cpp.o
 .PHONY : src/Vector.o
 
@@ -216,6 +288,15 @@ help:
 	@echo "... src/Planet.o"
 	@echo "... src/Planet.i"
 	@echo "... src/Planet.s"
+	@echo "... src/Renderer.o"
+	@echo "... src/Renderer.i"
+	@echo "... src/Renderer.s"
+	@echo "... src/Simulation.o"
+	@echo "... src/Simulation.i"
+	@echo "... src/Simulation.s"
+	@echo "... src/SpaceShip.o"
+	@echo "... src/SpaceShip.i"
+	@echo "... src/SpaceShip.s"
 	@echo "... src/Vector.o"
 	@echo "... src/Vector.i"
 	@echo "... src/Vector.s"

@@ -17,8 +17,8 @@ struct Vector {
     [[nodiscard]] Vector operator*( double scalar )         const;
     [[nodiscard]] Vector operator/( double scalar )         const;
     
-    [[nodiscard]] double length() const; 
+    [[nodiscard]] double Length() const; 
 
     // Квадрат длины (нужно будет для закона Ньтона, чтобы не извлекать корень лишний раз)
-    [[nodiscard]] double lengthSquared() const;
+    [[nodiscard]] double LengthSquared() const;
 };

@@ -21,6 +21,9 @@ set( SOURCES
     main.cpp
     src/Vector.cpp
     src/Planet.cpp
+    src/SpaceShip.cpp
+    src/Simulation.cpp
+    src/Renderer.cpp
 )
 
 # Создание исполняемого файла (программы)

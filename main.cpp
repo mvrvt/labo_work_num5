@@ -1,43 +1,49 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-#include "Vector.hpp"
+
 #include "Planet.hpp"
+#include "SpaceShip.hpp"
+#include "Simulation.hpp"
+#include "Renderer.hpp"
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode({800, 800}), "Space Simulation: Lab 5");
-    window.setFramerateLimit(60);
+    sf::RenderWindow window( sf::VideoMode({800, 800}), "Space Simulation: Lab 5" );
+    window.setFramerateLimit( 120 );
 
-    // Создаем нашу планету (Землю)
-    // Имя: Earth, Масса: огромная (пока просто число), Радиус: 40 пикселей, Позиция: x=400, y=400 (центр экрана)
-    Planet earth("Earth", 5.97e24, 40.0, Vector(400.0, 400.0));
-
-    // Создаем графическое представление (Круг) для SFML
-    sf::CircleShape earth_shape(earth.GetRadius());
+    // 1. Создаем физический движок
+    Simulation simulation;
     
-    // SFML рисует круг от левого верхнего угла. 
-    // Чтобы центр круга совпадал с координатами планеты, нужно сдвинуть "центр опоры" (Origin)
-    earth_shape.setOrigin({static_cast<float>(earth.GetRadius()), static_cast<float>(earth.GetRadius())});
-    
-    // Задаем цвет (например, синий)
-    earth_shape.setFillColor(sf::Color::Blue);
+    // Добавляем объекты
+    simulation.AddBody( std::make_shared<Planet>(
+        "Earth", 10000.0, 40.0, Vector( 400.0, 400.0 )
+    ));
 
-    while (window.isOpen()) {
-        while (const std::optional<sf::Event> event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) {
+    simulation.AddBody( std::make_shared<SpaceShip>(
+        "Apollo", 10.0, 50.0, 5.0, Vector( 200.0, 400.0 ), Vector( 0.0, -100.0 )
+    ));
+
+    // 2. Создаем отрисовщик
+    Renderer renderer;
+
+    sf::Clock physics_clock;
+
+    // Главный цикл
+    while ( window.isOpen() ) {
+        while ( const std::optional<sf::Event> event = window.pollEvent() ) {
+            if ( event->is<sf::Event::Closed>() ) {
                 window.close();
             }
         }
 
-        // --- ЛОГИКА СИМУЛЯЦИИ (пока пустая, планета стоит на месте) ---
-        
-        // Синхронизируем позицию графики с позицией физического объекта
-        Vector pos = earth.GetPosition();
-        earth_shape.setPosition({static_cast<float>(pos.x), static_cast<float>(pos.y)});
+        // Логика (Физика)
+        double dt = physics_clock.restart().asSeconds();
+        simulation.Update( dt );
 
-        // --- ОТРИСОВКА ---
-        window.clear(sf::Color::Black);
+        // Отрисовка
+        window.clear( sf::Color::Black );
         
-        window.draw(earth_shape); // Рисуем планету
+        // Передаем окно и данные вселенной в рендерер
+        renderer.Draw( window, simulation.GetUniverse() );
         
         window.display();
     }

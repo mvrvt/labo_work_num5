@@ -85,12 +85,12 @@ clean: CMakeFiles/SpaceSimulation.dir/clean
 CMakeFiles/SpaceSimulation.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=1,2,3,4 "Built target SpaceSimulation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=1,2,3,4,5,6,7 "Built target SpaceSimulation"
 .PHONY : CMakeFiles/SpaceSimulation.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/SpaceSimulation.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" 4
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/SpaceSimulation.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" 0
 .PHONY : CMakeFiles/SpaceSimulation.dir/rule
@@ -102,7 +102,7 @@ SpaceSimulation: CMakeFiles/SpaceSimulation.dir/rule
 # codegen rule for target.
 CMakeFiles/SpaceSimulation.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/SpaceSimulation.dir/build.make CMakeFiles/SpaceSimulation.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=1,2,3,4 "Finished codegen for target SpaceSimulation"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/build/CMakeFiles" --progress-num=1,2,3,4,5,6,7 "Finished codegen for target SpaceSimulation"
 .PHONY : CMakeFiles/SpaceSimulation.dir/codegen
 
 # clean rule for target.

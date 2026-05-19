@@ -26,3 +26,5 @@ public:
     // Setter
     virtual void UpdateState( const Vector& new_position, const Vector& new_velocity ) = 0;
 };
+
+

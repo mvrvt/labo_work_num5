@@ -10,6 +10,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/main.cpp" "CMakeFiles/SpaceSimulation.dir/main.cpp.o" "gcc" "CMakeFiles/SpaceSimulation.dir/main.cpp.o.d"
   "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Planet.cpp" "CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o" "gcc" "CMakeFiles/SpaceSimulation.dir/src/Planet.cpp.o.d"
+  "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Renderer.cpp" "CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o" "gcc" "CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o.d"
+  "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Simulation.cpp" "CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o" "gcc" "CMakeFiles/SpaceSimulation.dir/src/Simulation.cpp.o.d"
+  "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/SpaceShip.cpp" "CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o" "gcc" "CMakeFiles/SpaceSimulation.dir/src/SpaceShip.cpp.o.d"
   "/Users/marat/Desktop/My_code_projects/CLionProjects/Lab 5/lab_num5/src/Vector.cpp" "CMakeFiles/SpaceSimulation.dir/src/Vector.cpp.o" "gcc" "CMakeFiles/SpaceSimulation.dir/src/Vector.cpp.o.d"
   )
 

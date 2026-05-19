@@ -1,5 +1,6 @@
-CMakeFiles/SpaceSimulation.dir/main.cpp.o: \
-  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/main.cpp \
+CMakeFiles/SpaceSimulation.dir/src/Renderer.cpp.o: \
+  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Renderer.cpp \
+  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Renderer.hpp \
   /opt/homebrew/include/SFML/Graphics.hpp \
   /opt/homebrew/include/SFML/Graphics/BlendMode.hpp \
   /opt/homebrew/include/SFML/Graphics/Export.hpp \
@@ -915,9 +916,5 @@ CMakeFiles/SpaceSimulation.dir/main.cpp.o: \
   /opt/homebrew/include/SFML/System/InputStream.hpp \
   /opt/homebrew/include/SFML/System/MemoryInputStream.hpp \
   /opt/homebrew/include/SFML/System/Sleep.hpp \
-  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Planet.hpp \
   /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/ICelestialBody.hpp \
-  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Vector.hpp \
-  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/SpaceShip.hpp \
-  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Simulation.hpp \
-  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Renderer.hpp
+  /Users/marat/Desktop/My_code_projects/CLionProjects/Lab\ 5/lab_num5/src/Vector.hpp
