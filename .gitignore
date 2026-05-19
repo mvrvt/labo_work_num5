@@ -1,6 +1,15 @@
+# Системные файлы macOS
 .DS_Store
-   build/
-   *.o
-   *.out
-   .vscode/
-   .idea/
+
+# Папки сборки CMake
+build/
+cmake-build-*/
+
+# Скомпилированные файлы
+*.o
+*.out
+*.app
+
+# Файлы настроек редакторов (VSCode, CLion)
+.vscode/
+.idea/
