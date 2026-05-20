@@ -19,7 +19,7 @@ int main() {
     ));
 
     simulation.AddBody( std::make_shared<SpaceShip>(
-        "Apollo", 10.0, 50.0, 5.0, Vector( 200.0, 400.0 ), Vector( 0.0, -100.0 )
+        "Apollo", 10.0, 50.0, 5.0, Vector( 600.0, 400.0 ), Vector( 0.0, -220.0 )
     ));
 
     // 2. Создаем отрисовщик
@@ -27,7 +27,7 @@ int main() {
 
     sf::Clock physics_clock;
 
-    // Главный цикл
+    // Главный цикл 
     while ( window.isOpen() ) {
         while ( const std::optional<sf::Event> event = window.pollEvent() ) {
             if ( event->is<sf::Event::Closed>() ) {
