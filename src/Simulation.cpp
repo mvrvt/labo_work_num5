@@ -10,7 +10,7 @@ const std::vector<std::shared_ptr<ICelestialBody>>& Simulation::GetUniverse() co
 
 // Вычисляем суммарное ускорение в заданной точке пространства 
 Vector Simulation::CalculateAcceleration( const std::shared_ptr<ICelestialBody>& target, const Vector& current_position ) const {
-    Vector total_force( 0.0, 0.0 );
+    Vector total_force = target->GetThrust();
 
     for ( const auto& other : universe_ ) {
         if ( target == other ) continue;
@@ -40,6 +40,11 @@ void Simulation::Update( double dt ) {
         Vector velocity;
     };
     std::vector<State> new_states( universe_.size() );
+
+    // Даём объектам обновить своё внутреннее состояние (например, потратить топливо)
+    for ( auto& body : universe_ ) {
+        body->Tick( dt );
+    }
 
     // Шаг №1. Вычисление новых состояний для всех тел
     for ( size_t i = 0; i < universe_.size(); ++i ) {
@@ -79,7 +84,7 @@ void Simulation::Update( double dt ) {
         new_states[i].velocity = initial_vel + ( a1 + a2 * 2.0 + a3 * 2.0 + a4 ) * ( dt / 6.0 );
     }
 
-    // Шаг 2: Применяем вычисленные состояния ко всем объектам
+    // Шаг №2: Применяем вычисленные состояния ко всем объектам
     for ( size_t i = 0; i < universe_.size(); ++i ) {
         universe_[i]->UpdateState( new_states[i].position, new_states[i].velocity );
     }

@@ -17,6 +17,9 @@ public:
 
     [[nodiscard]] bool IsStatic() const override;
 
+    [[nodiscard]] Vector GetThrust() const override;
+    void Tick( double dt ) override; 
+
     void UpdateState( const Vector& new_position, const Vector& new_velocity ) override;
 
 private:

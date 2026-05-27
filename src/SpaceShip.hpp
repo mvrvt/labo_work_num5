@@ -23,6 +23,12 @@ public:
     // Метод для траты топлива
     void ConsumeFuel( double amount );
 
+    [[nodiscard]] Vector GetThrust() const override;
+    void Tick( double dt ) override;
+
+    // Setter для управления с клавиатуры 
+    void SetThrust( const Vector& thrust );
+
 private:
     std::string name_;
     double      dry_mass_;
@@ -30,4 +36,5 @@ private:
     double      radius_;
     Vector      position_;
     Vector      velocity_;
+    Vector      thrust_; // Тякущая тяга двигателя
 };

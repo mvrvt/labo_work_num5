@@ -23,8 +23,14 @@ public:
     // Пригодится для оптимизации: статичным телам не нужно считать Рунге-Кутту
     [[nodiscard]] virtual bool IsStatic() const = 0;
 
+    // Возвращает вектор тяги двигателя (для планет будет просто 0,0)
+    [[nodiscard]] virtual Vector GetThrust() const = 0;
+
     // Setter
     virtual void UpdateState( const Vector& new_position, const Vector& new_velocity ) = 0;
+
+    // Внутреннее обновление объекта (например, сжигание топлива)
+    virtual void Tick( double dt ) = 0;
 };
 
 
