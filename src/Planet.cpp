@@ -18,7 +18,7 @@ bool Planet::IsStatic() const {
 }
 
 Vector Planet::GetThrust() const {
-    return Vector( 0.0, 0.0 );
+    return Vector( 0.0, 0.0 ); // У планеты нет двигателей 
 }
 
 void Planet::Tick( double dt ) {

@@ -54,7 +54,7 @@ int main() {
             }
             if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) ) {
                 current_thrust.x -= kEnginePower;
-            }
+            } 
             if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) {
                 current_thrust.x += kEnginePower;
             }
