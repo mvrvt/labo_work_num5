@@ -1,6 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-#include <vector>
 #include <memory> 
 #include <iostream>
 
@@ -10,6 +9,20 @@
 #include "SpaceShip.hpp"
 #include "Simulation.hpp"
 #include "Renderer.hpp"
+#include "StateMachine.hpp" 
+
+// Данные телеметрии для автомата
+struct Telemetry {
+    double dist_to_earth;
+    double moon_dist_to_earth;
+    double dist_to_moon;
+
+    // ИСПРАВЛЕНИЕ: Конструктор по умолчанию обязателен для DynamicArray
+    Telemetry() : dist_to_earth(0.0), moon_dist_to_earth(0.0), dist_to_moon(0.0) {}
+
+    Telemetry(double d1, double d2, double d3) 
+        : dist_to_earth(d1), moon_dist_to_earth(d2), dist_to_moon(d3) {}
+};
 
 int main() {
     sf::RenderWindow window( sf::VideoMode({800, 800}), "Space Simulation: Lab 5" );
@@ -17,84 +30,103 @@ int main() {
 
     Simulation simulation;
     
-    // Статичная Земля в центре
-    simulation.AddBody( std::make_shared<Planet>(
-        "Earth", 10000.0, 100.0, Vector( 400.0, 400.0 )
-    ));
+    auto earth = std::make_shared<Planet>( "Earth", 10000.0, 40.0, Vector( 400.0, 400.0 ) );
+    
+    // ИСПРАВЛЕНИЕ: Увеличили массу Луны до 2500.0, чтобы её гравитация работала честно!
+    auto moon = std::make_shared<Moon>( "Moon", 2500.0, 15.0, Vector( 400.0, 120.0 ), Vector( 189.0, 0.0 ) );
+    auto player_ship = std::make_shared<SpaceShip>( "Apollo", 10.0, 800.0, 5.0, Vector( 580.0, 400.0 ), Vector( 0.0, -235.0 ) );
 
-    // Рассчитываем точную круговую скорость для Луны на дистанции 280 пикселей.
-    // Формула: v = sqrt(G * M / r) -> sqrt(1000.0 * 10000.0 / 280.0) ≈ 189.0
-    auto moon = std::make_shared<Moon>(
-        "Moon", 150.0, 15.0, Vector( 400.0, 120.0 ), Vector( 189.0, 0.0 )
-    );
+    simulation.AddBody( earth );
     simulation.AddBody( moon );
-
-    // Создаем корабль на низкой орбите Земли (дистанция 180 пикселей, v ≈ 235.0)
-    auto player_ship = std::make_shared<SpaceShip>(
-        "Apollo", 10.0, 400.0, 5.0, Vector( 580.0, 400.0 ), Vector( 0.0, -235.0 )
-        // SpaceShip( const std::string& name, double dry_mass, double fuel_mass, double radius, const Vector& position, const Vector& velocity );
-    );
     simulation.AddBody( player_ship );
 
     Renderer renderer;
     sf::Clock physics_clock;
-
+    
     const double kEnginePower = 6000.0;
+
+    fsm::StateMachine<Telemetry> autopilot;
+    
+    autopilot.AddState("Off", true);
+    autopilot.AddState("ProgradeBurn");
+    autopilot.AddState("Coast");
+    autopilot.AddState("Capture", true);
+    autopilot.SetInitialState("Off");
+
+    autopilot.AddTransition("ProgradeBurn", "Coast", [](const Telemetry& t) {
+        return t.dist_to_earth >= t.moon_dist_to_earth * 0.95;
+    });
+    autopilot.AddTransition("Coast", "Capture", [](const Telemetry& t) {
+        return t.dist_to_moon < 80.0;
+    });
+    autopilot.AddTransition("Coast", "ProgradeBurn", [](const Telemetry& t) {
+        return t.dist_to_earth < t.moon_dist_to_earth * 0.8; 
+    });
 
     while ( window.isOpen() ) {
         while ( const std::optional<sf::Event> event = window.pollEvent() ) {
             if ( event->is<sf::Event::Closed>() ) {
                 window.close();
             }
+
+            if ( const auto* key_pressed = event->getIf<sf::Event::KeyPressed>() ) {
+                if ( key_pressed->code == sf::Keyboard::Key::A ) {
+                    if ( autopilot.GetCurrentState() == "Off" ) {
+                        autopilot.SetCurrentState("ProgradeBurn");
+                        std::cout << ">> Autopilot: ENGAGED. State: Prograde Burn (Expanding Orbit)\n";
+                    } else {
+                        autopilot.SetCurrentState("Off");
+                        std::cout << ">> Autopilot: DISABLED. Switching to manual control.\n";
+                    }
+                }
+            }
         }
 
         Vector current_thrust( 0.0, 0.0 );
 
         if ( player_ship->GetFuelMass() > 0.0 ) {
-            // --- РЕЖИМ АВТОПИЛОТА (ЗАЖАТА КЛАВИША 'A') ---
-            if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::A ) ) {
-                // Вектор от корабля к Луне
+            
+            Telemetry t(
+                (player_ship->GetPosition() - earth->GetPosition()).Length(),
+                (moon->GetPosition() - earth->GetPosition()).Length(),
+                (player_ship->GetPosition() - moon->GetPosition()).Length()
+            );
+
+            bool state_changed = autopilot.Step(t);
+            if (state_changed) {
+                std::cout << ">> Autopilot transition to state: [" << autopilot.GetCurrentState() << "]\n";
+            }
+
+            std::string current_state = autopilot.GetCurrentState();
+            
+            if ( current_state == "ProgradeBurn" ) {
+                Vector prograde = player_ship->GetVelocity().Normalized();
+                current_thrust = prograde * kEnginePower;
+            } 
+            else if ( current_state == "Capture" ) {
                 Vector to_target = moon->GetPosition() - player_ship->GetPosition();
-                
-                // Разница скоростей между Луной и кораблем (чтобы затормозить при подлёте)
                 Vector relative_velocity = moon->GetVelocity() - player_ship->GetVelocity();
                 
-                // Коэффициенты физического регулятора
-                double kp = 35.0;  // Сила, притягивающая к Луне
-                double kv = 50.0;  // Демпфирование (гашение скорости, чтобы не пролететь мимо)
+                double kp = 40.0; 
+                double kv = 60.0; 
                 
                 current_thrust = ( to_target * kp ) + ( relative_velocity * kv );
-                
-                // Ограничиваем рассчитанную автопилотом тягу максимальной мощностью двигателя
-                double thrust_magnitude = current_thrust.Length();
-                if ( thrust_magnitude > kEnginePower ) {
-                    current_thrust = ( current_thrust / thrust_magnitude ) * kEnginePower;
+                if ( current_thrust.Length() > kEnginePower ) {
+                    current_thrust = current_thrust.Normalized() * kEnginePower;
                 }
             } 
-            // --- РУЧНОЕ УПРАВЛЕНИЕ (СТРЕЛКИ) ---
-            else {
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Up ) ) {
-                    current_thrust.y -= kEnginePower;
-                }
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Down ) ) {
-                    current_thrust.y += kEnginePower;
-                }
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) ) {
-                    current_thrust.x -= kEnginePower;
-                } 
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) {
-                    current_thrust.x += kEnginePower;
-                }
+            else if ( current_state == "Off" ) {
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Up ) )    current_thrust.y -= kEnginePower;
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Down ) )  current_thrust.y += kEnginePower;
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) )  current_thrust.x -= kEnginePower;
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) current_thrust.x += kEnginePower;
             }
         }
 
         player_ship->SetThrust( current_thrust );
 
         double dt = physics_clock.restart().asSeconds();
-        
-        // Предотвращаем резкие скачки физики при лагах окна (например, при перетаскивании)
         if ( dt > 0.1 ) dt = 0.1; 
-
         simulation.Update( dt );
 
         window.clear( sf::Color::Black );

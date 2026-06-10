@@ -27,3 +27,9 @@ double Vector::Length() const {
 double Vector::LengthSquared() const {
     return x * x + y * y;
 }
+
+Vector Vector::Normalized() const {
+    double len = Length();
+    if ( len == 0 ) return { 0.0, 0.0 };
+    return { x / len, y / len };
+}

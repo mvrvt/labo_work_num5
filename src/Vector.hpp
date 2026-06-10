@@ -19,6 +19,8 @@ struct Vector {
     
     [[nodiscard]] double Length() const; 
 
+    [[nodiscard]] Vector Normalized() const;
+
     // Квадрат длины (нужно будет для закона Ньтона, чтобы не извлекать корень лишний раз)
     [[nodiscard]] double LengthSquared() const;
 };
