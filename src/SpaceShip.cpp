@@ -1,7 +1,7 @@
 #include "SpaceShip.hpp"
 
 SpaceShip::SpaceShip( const std::string& name, double dry_mass, double fuel_mass, double radius, const Vector& position, const Vector& velocity )
-    : name_( name ), dry_mass_( dry_mass ), fuel_mass_( fuel_mass ), radius_( radius ), position_( position ), velocity_( velocity ), thrust_( 0.0, 0.0 ) { }
+    : name_( name ), dry_mass_( dry_mass ), fuel_mass_( fuel_mass ), max_fuel_mass_( fuel_mass ), radius_( radius ), position_( position ), velocity_( velocity ), thrust_( 0.0, 0.0 ) { }
 
 std::string SpaceShip::GetName() const { return name_; }
 
@@ -42,7 +42,7 @@ void SpaceShip::Tick( double dt ) {
     // Если двигатель работает (вектор тяги не нулевой) 
     if ( thrust_.LengthSquared() > 0.0 ){
         // Коэффициент расхода топлива. Чем больше тяга, тем больше сгорает топлива
-        const double kFuelConsumptionRate = 0.05;
+        const double kFuelConsumptionRate = 0.001;
 
         double fuel_burned = thrust_.Length() * kFuelConsumptionRate * dt;
         ConsumeFuel( fuel_burned );
@@ -52,4 +52,8 @@ void SpaceShip::Tick( double dt ) {
             thrust_ = Vector( 0.0, 0.0 );
         }
     }
+}
+
+double SpaceShip::GetMaxFuelMass() const {
+    return max_fuel_mass_;
 }

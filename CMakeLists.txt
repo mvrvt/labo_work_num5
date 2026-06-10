@@ -1,12 +1,11 @@
 cmake_minimum_required( VERSION 3.15 )
 
-# Название проекта
 project( SpaceSimulation )
 
-# Требуется стандарт С++17
+# Cтандарт С++17
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -Wpedantic" ) # -Wextra
 
 # Указываем Cmake где Homebrew хранит библиотеки на Apple Silicon Mac
 set( CMAKE_PREFIX_PATH "/opt/homebrew" )
@@ -24,6 +23,7 @@ set( SOURCES
     src/SpaceShip.cpp
     src/Simulation.cpp
     src/Renderer.cpp
+    src/Moon.cpp
 )
 
 # Создание исполняемого файла (программы)
