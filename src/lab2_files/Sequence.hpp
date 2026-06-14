@@ -70,10 +70,17 @@ public:
         return result;
     }
 
+    // ЛР-5 Автомат: Структура-функтор для замены лямбды в Map
+    struct MapReducer {
+        std::function<T( const T& )> func_;
+        explicit MapReducer( std::function<T( const T& )> f ) : func_( std::move(f) ) {}
+        T operator()( const T& val, int /*idx*/ ) const {
+            return func_( val );
+        }
+    };
+
     Sequence<T>* Map( std::function<T( const T& )> func ) const {
-        return MapIndexed( [func]( const T& val, int /*idx*/ ) {
-            return func( val );
-        });
+        return MapIndexed( MapReducer( func ) );
     }
 
     template <typename T2>
@@ -118,11 +125,19 @@ public:
         return result;
     }
 
+    // ЛР-5 Автомат: Структура-функтор для замены лямбды в ZipWithReversed
+    struct ZipWithReversedReducer {
+        const Sequence<T>* seq_;
+        int n_;
+        ZipWithReversedReducer( const Sequence<T>* seq, int n ) : seq_( seq ), n_( n ) {}
+        T operator()( const T& val, int idx ) const {
+            return val + seq_->Get( n_ - idx - 1 );
+        }
+    };
+
     Sequence<T>* ZipWithReversed() const {
         int n = GetLength();
-        return MapIndexed( [this, n]( const T& val, int idx ) {
-            return val + Get( n - idx - 1 );
-        });
+        return MapIndexed( ZipWithReversedReducer( this, n ) );
     }
 
     Sequence<T>* Skip( int count ) const {
@@ -201,6 +216,17 @@ public:
         int count;
     };
 
+    struct MinMaxAvgReducer {
+        // Убрали лишние typename Sequence<T>::, так как структура уже внутри класса
+        MinMaxAvg operator()(MinMaxAvg result, const T& value) const {
+            if ( value < result.min ) { result.min = value; }
+            if ( value > result.max ) { result.max = value; }
+            result.sum += static_cast<double>( value );
+            ++result.count;
+            return result;
+        }
+    };
+
     MinMaxAvg GetMinMaxAvg() const {
         if ( GetLength() == 0 ) {
             throw IndexOutOfRange( "Sequence: GetMinMaxAvg called on empty sequence" );
@@ -209,18 +235,21 @@ public:
         T first = Get( 0 );
         MinMaxAvg initial = { first, first, 0.0, 0 };
 
-        return Reduce<MinMaxAvg>(
-            std::function<MinMaxAvg(MinMaxAvg, const T&)>(
-                []( MinMaxAvg result, const T& value ) -> MinMaxAvg {
-                    if ( value < result.min ) { result.min = value; }
-                    if ( value > result.max ) { result.max = value; }
-                    result.sum += static_cast<double>( value );
-                    ++result.count;
-                    return result;
-                }
-            ),
-            initial
-        );
+        // ИСПРАВЛЕНИЕ: Убрано <T>, так как MinMaxAvgReducer не является шаблоном
+        return Reduce<MinMaxAvg>( MinMaxAvgReducer(), initial ); 
+
+        // return Reduce<MinMaxAvg>(
+        //     std::function<MinMaxAvg(MinMaxAvg, const T&)>(
+        //         []( MinMaxAvg result, const T& value ) -> MinMaxAvg {
+        //             if ( value < result.min ) { result.min = value; }
+        //             if ( value > result.max ) { result.max = value; }
+        //             result.sum += static_cast<double>( value );
+        //             ++result.count;
+        //             return result;
+        //         }
+        //     ),
+        //     initial
+        // );
     }
 
     double GetAvg() const {

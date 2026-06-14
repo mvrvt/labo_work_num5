@@ -31,3 +31,5 @@ add_executable( SpaceSimulation ${SOURCES} )
 
 # Линкуем (привязываем) SFML к программе 
 target_link_libraries( SpaceSimulation PRIVATE SFML::Graphics SFML::Window SFML::System )
+
+file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )

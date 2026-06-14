@@ -3,7 +3,6 @@
 #include <iostream>
 
 Renderer::Renderer() {
-    // ИСПРАВЛЕНИЕ: Точный путь к твоей картинке Земли внутри проекта
     if (!earth_texture_.loadFromFile("assets/Earth_2.png")) {
         std::cerr << "Error: Could not find assets/Earth_2.png. Check your working directory!\n";
     }
@@ -13,6 +12,42 @@ Renderer::Renderer() {
 void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelestialBody>>* universe ) const {
     if (!universe) return; 
 
+    // 1. Сначала рисуем визуальные границы орбит и гравитации
+    for ( int i = 0; i < universe->GetLength(); ++i ) {
+        std::shared_ptr<ICelestialBody> body = universe->Get( i );
+        
+        if ( body->GetName() == "Earth" ) {
+            // Траектория орбиты Луны
+            sf::CircleShape moon_orbit( 350.f );
+            moon_orbit.setOrigin( {350.f, 350.f} );
+            moon_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
+            moon_orbit.setFillColor( sf::Color::Transparent );
+            moon_orbit.setOutlineThickness( 1.f );
+            moon_orbit.setOutlineColor( sf::Color(100, 100, 100, 100) ); // Полупрозрачный серый
+            window.draw( moon_orbit );
+            
+            // Траектория парковочной орбиты Корабля
+            sf::CircleShape ship_orbit( 70.f );
+            ship_orbit.setOrigin( {70.f, 70.f} );
+            ship_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
+            ship_orbit.setFillColor( sf::Color::Transparent );
+            ship_orbit.setOutlineThickness( 1.f );
+            ship_orbit.setOutlineColor( sf::Color(100, 255, 100, 100) ); // Полупрозрачный зеленый
+            window.draw( ship_orbit );
+        }
+        else if ( body->GetName() == "Moon" ) {
+            // Сфера гравитационного влияния Луны (Capture zone = 100)
+            sf::CircleShape capture_zone( 100.f );
+            capture_zone.setOrigin( {100.f, 100.f} );
+            capture_zone.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
+            capture_zone.setFillColor( sf::Color(50, 50, 255, 20) ); 
+            capture_zone.setOutlineThickness( 1.f );
+            capture_zone.setOutlineColor( sf::Color(100, 100, 255, 120) );
+            window.draw( capture_zone );
+        }
+    }
+
+    // 2. Затем рисуем сами небесные тела и корабль
     for ( int i = 0; i < universe->GetLength(); ++i ) {
         std::shared_ptr<ICelestialBody> body = universe->Get( i );
 
