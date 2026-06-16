@@ -3,10 +3,18 @@
 #include <iostream>
 
 Renderer::Renderer() {
-    if (!earth_texture_.loadFromFile("assets/Earth_2.png")) {
-        std::cerr << "Error: Could not find assets/Earth_2.png. Check your working directory!\n";
+    // Код для того, чтобы Земля отображалась как изображение Земли, а не как синий круг
+    if ( !earth_texture_.loadFromFile( "assets/Earth.png" ) ) {
+        std::cerr << "Error: Could not find assets/Earth.png Check your working directory!" << std::endl;
     }
-    earth_texture_.setSmooth(true); 
+    earth_texture_.setSmooth( true ); 
+
+    // Отрисовка текстуры Луны
+    if ( !moon_texture_.loadFromFile( "assets/Moon.png" ) ) {
+        std::cerr << "Error: Could not find assets/Moon.png Check your working directory!" << std::endl;
+    }
+    moon_texture_.setSmooth( true );
+
 }
 
 void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelestialBody>>* universe ) const {
@@ -58,9 +66,10 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
         if ( body->GetName() == "Earth" ) {
             shape.setTexture( &earth_texture_ );
         } else if ( body->GetName() == "Moon" ) {
-            shape.setFillColor( sf::Color( 160, 160, 160 ) ); 
-        } else {
-            shape.setFillColor( sf::Color::Red );             
+            shape.setTexture( &moon_texture_ );
+            // shape.setFillColor( sf::Color( 160, 160, 160 ) ); 
+        } else { // Корабль
+            shape.setFillColor( sf::Color::Red );
         }
 
         window.draw( shape );

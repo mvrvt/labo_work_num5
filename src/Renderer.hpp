@@ -15,5 +15,6 @@ public:
     void Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelestialBody>>* universe ) const;
 
 private:
-    sf::Texture earth_texture_; // Поле для хранения текстуры
+    sf::Texture earth_texture_; // Поле для хранения текстуры Земли 
+    sf::Texture moon_texture_;  // Поле для изображения Луны
 };
