@@ -5,7 +5,6 @@
 #include <cmath>
 #include <optional> 
 
-// Подключаем ImGui
 #include "imgui.h"
 #include "imgui-SFML.h"
 
@@ -82,7 +81,9 @@ struct ConditionOrbitEntered {
 };
 
 int main() {
-    sf::RenderWindow window( sf::VideoMode({1200, 900}), "Space Simulation: Lab 5" );
+    unsigned int window_width  = 1600;
+    unsigned int window_height = 1000;
+    sf::RenderWindow window( sf::VideoMode( { window_width, window_height} ), "Space Simulation: Lab 5" );
     window.setFramerateLimit( 120 );
 
     // Инициализация ImGui
@@ -92,10 +93,20 @@ int main() {
     }
 
     Simulation simulation;
-    
-    auto earth = std::make_shared<Planet>( "Earth", 10000.0, 40.0, Vector( 600.0, 450.0 ) );
-    auto moon = std::make_shared<Moon>( "Moon", 2500.0, 15.0, Vector( 600.0, 100.0 ), Vector( 169.0, 0.0 ) );
-    auto player_ship = std::make_shared<SpaceShip>( "Apollo", 0.01, 0.8, 5.0, Vector( 670.0, 450.0 ), Vector( 0.0, 378.0 ) );
+
+    // Координаты центра экрана (для расположения в них Земли)
+    double center_x = window_width / 2.0;
+    double center_y = window_height / 2.0;
+
+    // Расставляем объекты относительно центра экрана
+    // Земля строго в центре
+    auto earth = std::make_shared<Planet>( "Earth", 10000.0, 40.0, Vector( center_x, center_y ) );
+
+    // Луна: орбита 350, значит ставим её на 350 пикселей выше центра экрана (center_y - 350.0)
+    auto moon = std::make_shared<Moon>( "Moon", 2500.0, 15.0, Vector( center_x, center_y - 350.0 ), Vector( 169.0, 0.0 ) );
+
+    // Корабль: парковочная орбита 70, ставим на 70 пикселей правее центра (center_x + 70.0)
+    auto player_ship = std::make_shared<SpaceShip>( "Soyuz", 0.01, 0.8, 5.0, Vector( center_x + 70.0, center_y ), Vector( 0.0, 378.0 ) );
 
     simulation.AddBody( earth );
     simulation.AddBody( moon );
@@ -215,7 +226,7 @@ int main() {
         if ( dt > 0.1 ) dt = 0.1; 
         simulation.Update( dt );
 
-        // === ОТРИСОВКА ИНТЕРФЕЙСА IMGUI (ТЕПЕРЬ ДВА РАЗДЕЛЬНЫХ ОКНА) ===
+        // ===== ОТРИСОВКА ИНТЕРФЕЙСА IMGUI =====
 
         // --- ОКНО 1: ТОПЛИВО (Слева сверху) ---
         // Фиксируем начальное положение окна в координатах x=20, y=20
@@ -236,9 +247,81 @@ int main() {
             ImGui::PopStyleColor(); 
         ImGui::End();
 
+        // === ЛОГИКА ОПРЕДЕЛЕНИЯ ТЕКУЩЕЙ ОРБИТЫ И ОТНОСИТЕЛЬНОЙ СКОРОСТИ ===
+        // Мы вынесли это сюда, чтобы использовать и для статуса, и для спидометра
+        std::string current_orbit;
+        double dist_to_earth = (player_ship->GetPosition() - earth->GetPosition()).Length();
+        double dist_to_moon = (player_ship->GetPosition() - moon->GetPosition()).Length();
+        
+        double display_speed = 0.0;
+
+        if (dist_to_moon < 180.0) { 
+            current_orbit = "Moon Orbit";
+            // В зоне Луны показываем скорость относительно движущейся Луны (векторная разность)
+            display_speed = (player_ship->GetVelocity() - moon->GetVelocity()).Length();
+        } else if (dist_to_earth < 400.0) {
+            current_orbit = "Earth Parking Orbit";
+            // Земля у нас статична, ее скорость 0, поэтому берем абсолютную скорость корабля
+            display_speed = player_ship->GetVelocity().Length();
+        } else {
+            current_orbit = "Transfer Trajectory"; 
+            // В глубоком космосе показываем абсолютную скорость
+            display_speed = player_ship->GetVelocity().Length();
+        }
+
+        // --- ОКНО 3: ТЕЛЕМЕТРИЯ КОРАБЛЯ (Слева, под топливом) ---
+        ImGui::SetNextWindowPos(ImVec2(20.f, 100.f), ImGuiCond_Once);
+        ImGuiWindowFlags telemetry_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+        
+        ImGui::Begin("Ship Telemetry", nullptr, telemetry_flags);
+            double current_mass = player_ship->GetMass();
+            
+            // Выводим нашу "умную" относительную скорость
+            ImGui::Text("Rel. Speed: %.2f m/s", display_speed);
+            ImGui::Text("Mass:       %.2f kg", current_mass);
+        ImGui::End();
+
+
+        // --- ОКНО 4: СТАТУС ПОЛЕТА (По центру снизу) ---
+        // Логика нумерации фаз автопилота
+        std::string state_str = autopilot.GetCurrentState();
+        std::string phase_text;
+        if (state_str == "Off")                phase_text = "0 - Manual Control";
+        else if (state_str == "WaitAlignment") phase_text = "1 - Await Alignment";
+        else if (state_str == "ProgradeBurn")  phase_text = "2 - Prograde Burn";
+        else if (state_str == "Coast")         phase_text = "3 - Coasting";
+        else if (state_str == "Capture")       phase_text = "4 - Capture Burn";
+        else if (state_str == "OrbitMoon")     phase_text = "5 - Orbit Stabilized";
+
+        // ИСПРАВЛЕНИЕ ПОЗИЦИИ:
+        // Окно автопилота у тебя строится от координаты Y = window_height - 110.f,
+        // но оно высокое из-за кнопки. Центральное окно низкое. 
+        // Чтобы их нижние края выровнялись, мы опускаем центральное окно ниже, например до -75.f
+        ImGui::SetNextWindowPos(ImVec2((window_width / 2.0f) - 200.f, window_height - 75.f), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(400.f, 0.f), ImGuiCond_Once); 
+        
+        ImGuiWindowFlags status_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
+        
+        ImGui::Begin("Flight Status", nullptr, status_flags);
+            ImGui::Columns(2, "status_columns", true); 
+            
+            ImGui::Text("Current Location:");
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "%s", current_orbit.c_str());
+            
+            ImGui::NextColumn(); 
+            
+            ImGui::Text("Autopilot Phase:");
+            if (state_str == "Off") {
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", phase_text.c_str()); 
+            } else {
+                ImGui::TextColored(ImVec4(0.1f, 0.8f, 0.1f, 1.0f), "%s", phase_text.c_str()); 
+            }
+            
+            ImGui::Columns(1); 
+        ImGui::End();
+
         // --- ОКНО 2: АВТОПИЛОТ (Справа снизу) ---
-        // Так как разрешение окна 1200x900, координаты x=930, y=790 идеально поместят окно в правый нижний угол
-        ImGui::SetNextWindowPos(ImVec2(930.f, 790.f), ImGuiCond_Once);
+        ImGui::SetNextWindowPos( ImVec2( window_width - 270.f, window_height - 110.f ), ImGuiCond_Once );
         ImGuiWindowFlags auto_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
         ImGui::Begin("Autopilot Control", nullptr, auto_flags);
@@ -273,7 +356,7 @@ int main() {
         window.display();
     }
 
-    // Завершаем работу ImGui при закрытии
+    // Завершение работы ImGui
     ImGui::SFML::Shutdown();
     return 0;
 }

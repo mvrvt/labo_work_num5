@@ -27,6 +27,7 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
         if ( body->GetName() == "Earth" ) {
             // Траектория орбиты Луны
             sf::CircleShape moon_orbit( 350.f );
+            moon_orbit.setPointCount( 150 ); // Сглаживание правильного многоугольника орбиты Луны, чтобы он выглядел как окружность
             moon_orbit.setOrigin( {350.f, 350.f} );
             moon_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
             moon_orbit.setFillColor( sf::Color::Transparent );
@@ -36,6 +37,7 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
             
             // Траектория парковочной орбиты Корабля
             sf::CircleShape ship_orbit( 70.f );
+            ship_orbit.setPointCount( 100 ); // Сглаживание орбиты корабля
             ship_orbit.setOrigin( {70.f, 70.f} );
             ship_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
             ship_orbit.setFillColor( sf::Color::Transparent );
@@ -73,26 +75,5 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
         }
 
         window.draw( shape );
-
-        
-        // // Интерфейс HUD топлива
-        // auto ship = std::dynamic_pointer_cast<SpaceShip>( body );
-        // if ( ship ) {
-        //     sf::RectangleShape fuel_bg( {200.f, 20.f} );
-        //     fuel_bg.setPosition( {20.f, 20.f} );
-        //     fuel_bg.setFillColor( sf::Color( 60, 60, 60 ) );
-        //     window.draw( fuel_bg );
-
-        //     float fuel_ratio = static_cast<float>( ship->GetFuelMass() / ship->GetMaxFuelMass() );
-            
-        //     sf::RectangleShape fuel_bar( {200.f * fuel_ratio, 20.f} );
-        //     fuel_bar.setPosition( {20.f, 20.f} );
-        //     if ( fuel_ratio > 0.25f ) {
-        //         fuel_bar.setFillColor( sf::Color::Green );
-        //     } else {
-        //         fuel_bar.setFillColor( sf::Color::Red );
-        //     }
-        //     window.draw( fuel_bar );
-        // }
     }
 }
