@@ -5,6 +5,10 @@
 #include <cmath>
 #include <optional> 
 
+// Подключаем ImGui
+#include "imgui.h"
+#include "imgui-SFML.h"
+
 #include "Vector.hpp"
 #include "Planet.hpp"
 #include "Moon.hpp"
@@ -81,6 +85,12 @@ int main() {
     sf::RenderWindow window( sf::VideoMode({1200, 900}), "Space Simulation: Lab 5" );
     window.setFramerateLimit( 120 );
 
+    // Инициализация ImGui
+    if (!ImGui::SFML::Init(window)) {
+        std::cerr << "Не удалось инициализировать ImGui-SFML!" << std::endl;
+        return -1;
+    }
+
     Simulation simulation;
     
     auto earth = std::make_shared<Planet>( "Earth", 10000.0, 40.0, Vector( 600.0, 450.0 ) );
@@ -93,6 +103,7 @@ int main() {
 
     Renderer renderer;
     sf::Clock physics_clock;
+    sf::Clock imgui_clock; // Таймер специально для ImGui
     
     // Делаем тягу мощнее, чтобы контроллер успевал выруливать в критических ситуациях
     const double kEnginePower = 400.0; 
@@ -112,35 +123,18 @@ int main() {
     autopilot.AddTransition( "Coast", "Capture", ConditionStartCapture() );
     autopilot.AddTransition( "Capture", "OrbitMoon", ConditionOrbitEntered() );
 
-    // --- Настройка UI Кнопки ---
-    sf::RectangleShape autopilot_btn(sf::Vector2f(150.f, 50.f));
-    autopilot_btn.setPosition(sf::Vector2f(1020.f, 820.f)); 
-    autopilot_btn.setOutlineThickness(3.f);
-    autopilot_btn.setOutlineColor(sf::Color::White);
-
     while ( window.isOpen() ) {
         while ( const std::optional<sf::Event> event = window.pollEvent() ) {
+            // Передаем события в ImGui
+            ImGui::SFML::ProcessEvent(window, event.value());
+
             if ( event->is<sf::Event::Closed>() ) {
                 window.close();
             }
-
-            if ( const auto* mouse_btn = event->getIf<sf::Event::MouseButtonReleased>() ) {
-                if ( mouse_btn->button == sf::Mouse::Button::Left ) {
-                    sf::Vector2f mouse_pos_f(static_cast<float>(mouse_btn->position.x), static_cast<float>(mouse_btn->position.y));
-                    
-                    if ( autopilot_btn.getGlobalBounds().contains(mouse_pos_f) ) {
-                        std::string current = autopilot.GetCurrentState();
-                        if ( current == "Off" || current == "OrbitMoon" ) {
-                            autopilot.SetCurrentState("WaitAlignment");
-                            std::cout << ">> Autopilot: ENGAGED. Waiting for phase alignment...\n";
-                        } else {
-                            autopilot.SetCurrentState("Off");
-                            std::cout << ">> Autopilot: DISABLED. Manual control.\n";
-                        }
-                    }
-                }
-            }
         }
+
+        // Обновление логики ImGui на каждый кадр
+        ImGui::SFML::Update(window, imgui_clock.restart());
 
         Vector current_thrust( 0.0, 0.0 );
 
@@ -161,13 +155,6 @@ int main() {
 
             std::string current_state = autopilot.GetCurrentState();
             
-            // Цветовая индикация кнопки
-            if ( current_state == "Off" ) {
-                autopilot_btn.setFillColor(sf::Color(128, 128, 128)); // Серая
-            } else {
-                autopilot_btn.setFillColor(sf::Color(0, 200, 0));     // Зеленая
-            }
-
             // --- Логика маневров ---
             if ( current_state == "WaitAlignment" || current_state == "Coast" || current_state == "OrbitMoon" ) {
                 current_thrust = Vector( 0.0, 0.0 ); 
@@ -228,12 +215,65 @@ int main() {
         if ( dt > 0.1 ) dt = 0.1; 
         simulation.Update( dt );
 
+        // === ОТРИСОВКА ИНТЕРФЕЙСА IMGUI (ТЕПЕРЬ ДВА РАЗДЕЛЬНЫХ ОКНА) ===
+
+        // --- ОКНО 1: ТОПЛИВО (Слева сверху) ---
+        // Фиксируем начальное положение окна в координатах x=20, y=20
+        ImGui::SetNextWindowPos(ImVec2(20.f, 20.f), ImGuiCond_Once);
+        // Запрещаем сворачивать, двигать мышкой и менять размер окна, чтобы оно было частью HUD игры
+        ImGuiWindowFlags fuel_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+
+        ImGui::Begin("Fuel System", nullptr, fuel_flags); 
+            ImGui::Text("Fuel Level:"); 
+            float fuel_ratio = static_cast<float>(player_ship->GetFuelMass() / player_ship->GetMaxFuelMass());
+            
+            if (fuel_ratio < 0.25f) {
+                ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.8f, 0.1f, 0.1f, 1.0f)); // Красный, если мало
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.1f, 0.8f, 0.1f, 1.0f)); // Зеленый в норме
+            }
+            ImGui::ProgressBar(fuel_ratio, ImVec2(250.f, 25.f));
+            ImGui::PopStyleColor(); 
+        ImGui::End();
+
+        // --- ОКНО 2: АВТОПИЛОТ (Справа снизу) ---
+        // Так как разрешение окна 1200x900, координаты x=930, y=790 идеально поместят окно в правый нижний угол
+        ImGui::SetNextWindowPos(ImVec2(930.f, 790.f), ImGuiCond_Once);
+        ImGuiWindowFlags auto_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+
+        ImGui::Begin("Autopilot Control", nullptr, auto_flags);
+            std::string current_state = autopilot.GetCurrentState();
+            ImGui::Text("AI State: %s", current_state.c_str());
+            ImGui::Spacing();
+
+            if (current_state == "Off") {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.4f, 0.4f, 1.0f)); // Серый цвет, если выключен
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.1f, 1.0f)); // Зеленый, если работает
+            }
+
+            if (ImGui::Button("ENGAGE AUTOPILOT", ImVec2(250.f, 40.f))) {
+                if (current_state == "Off" || current_state == "OrbitMoon") {
+                    autopilot.SetCurrentState("WaitAlignment");
+                    std::cout << ">> Autopilot: ENGAGED. Waiting for phase alignment...\n";
+                } else {
+                    autopilot.SetCurrentState("Off");
+                    std::cout << ">> Autopilot: DISABLED. Manual control.\n";
+                }
+            }
+            ImGui::PopStyleColor();
+        ImGui::End();
+        // ===================================
+
         window.clear( sf::Color::Black );
         renderer.Draw( window, simulation.GetUniverse() );
         
-        window.draw(autopilot_btn);
+        // Рендерим окна ImGui поверх графики SFML
+        ImGui::SFML::Render(window);
         window.display();
     }
 
+    // Завершаем работу ImGui при закрытии
+    ImGui::SFML::Shutdown();
     return 0;
 }

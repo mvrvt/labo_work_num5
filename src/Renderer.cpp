@@ -74,24 +74,25 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
 
         window.draw( shape );
 
-        // Интерфейс HUD топлива
-        auto ship = std::dynamic_pointer_cast<SpaceShip>( body );
-        if ( ship ) {
-            sf::RectangleShape fuel_bg( {200.f, 20.f} );
-            fuel_bg.setPosition( {20.f, 20.f} );
-            fuel_bg.setFillColor( sf::Color( 60, 60, 60 ) );
-            window.draw( fuel_bg );
+        
+        // // Интерфейс HUD топлива
+        // auto ship = std::dynamic_pointer_cast<SpaceShip>( body );
+        // if ( ship ) {
+        //     sf::RectangleShape fuel_bg( {200.f, 20.f} );
+        //     fuel_bg.setPosition( {20.f, 20.f} );
+        //     fuel_bg.setFillColor( sf::Color( 60, 60, 60 ) );
+        //     window.draw( fuel_bg );
 
-            float fuel_ratio = static_cast<float>( ship->GetFuelMass() / ship->GetMaxFuelMass() );
+        //     float fuel_ratio = static_cast<float>( ship->GetFuelMass() / ship->GetMaxFuelMass() );
             
-            sf::RectangleShape fuel_bar( {200.f * fuel_ratio, 20.f} );
-            fuel_bar.setPosition( {20.f, 20.f} );
-            if ( fuel_ratio > 0.25f ) {
-                fuel_bar.setFillColor( sf::Color::Green );
-            } else {
-                fuel_bar.setFillColor( sf::Color::Red );
-            }
-            window.draw( fuel_bar );
-        }
+        //     sf::RectangleShape fuel_bar( {200.f * fuel_ratio, 20.f} );
+        //     fuel_bar.setPosition( {20.f, 20.f} );
+        //     if ( fuel_ratio > 0.25f ) {
+        //         fuel_bar.setFillColor( sf::Color::Green );
+        //     } else {
+        //         fuel_bar.setFillColor( sf::Color::Red );
+        //     }
+        //     window.draw( fuel_bar );
+        // }
     }
 }
