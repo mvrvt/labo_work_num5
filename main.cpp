@@ -83,14 +83,26 @@ struct ConditionOrbitEntered {
 int main() {
     unsigned int window_width  = 1600;
     unsigned int window_height = 1000;
-    sf::RenderWindow window( sf::VideoMode( { window_width, window_height} ), "Space Simulation: Lab 5" );
+
+    sf::ContextSettings settings;
+    settings.antiAliasingLevel = 8; // Восьмикратное сглаживание 
+
+    sf::RenderWindow window( sf::VideoMode( { window_width, window_height} ), "Space Simulation: Lab 5", sf::State::Windowed, settings );
     window.setFramerateLimit( 120 );
 
-    // Инициализация ImGui
     if (!ImGui::SFML::Init(window)) {
         std::cerr << "Не удалось инициализировать ImGui-SFML!" << std::endl;
         return -1;
     }
+
+    // Создаем и настраиваем камеру (View) для отдаления "вселенной"
+    sf::View camera = window.getDefaultView();
+    camera.zoom( 1.2f ); 
+
+    // Явно ставим центр камеры в центр экрана
+    camera.setCenter( sf::Vector2f( window_width / 2.0f, window_height / 2.0f) );
+
+    window.setView(camera); // Применяем камеру к окну
 
     Simulation simulation;
 
