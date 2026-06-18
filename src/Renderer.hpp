@@ -17,4 +17,5 @@ public:
 private:
     sf::Texture earth_texture_; // Поле для хранения текстуры Земли 
     sf::Texture moon_texture_;  // Поле для изображения Луны
+    sf::Texture selene_texture_;
 };

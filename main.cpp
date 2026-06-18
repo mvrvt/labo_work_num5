@@ -20,79 +20,102 @@
 // Данные телеметрии для автомата
 struct Telemetry {
     Vector earth_pos;
-    Vector moon_pos;
+    Vector target_pos;
     Vector ship_pos;
     Vector ship_vel;
-    Vector moon_vel; 
+    Vector target_vel; 
 
     double dist_to_earth;
-    double dist_to_moon;
+    double dist_to_target;
 
-    Telemetry() : dist_to_earth(0.0), dist_to_moon(0.0) { }
+    // Динамические параметры выбранной цели
+    double target_mass;
+    double target_radius;
+    double target_soi; // Сфера влияния (Сфера Лапласа)
 
-    Telemetry( Vector e, Vector m, Vector s, Vector sv, Vector mv ) 
-        : earth_pos( e ), moon_pos( m ), ship_pos( s ), ship_vel( sv ), moon_vel( mv ) { 
+    Telemetry()  { }
+
+    Telemetry( Vector e, Vector tp, Vector s, Vector sv, Vector tv, double t_mass, double t_rad, double t_soi ) 
+        : earth_pos( e ), target_pos( tp ), ship_pos( s ), ship_vel( sv ), target_vel( tv ), 
+          target_mass( t_mass ), target_radius( t_rad ), target_soi( t_soi ) { 
         dist_to_earth = (s - e).Length();
-        dist_to_moon = (s - m).Length();
+        dist_to_target = (s - tp).Length();
     }
 };
 
-// 1. Ждем правильного фазового угла. Берем чуть раньше (1.50 - 1.60 рад), 
-// чтобы Луна своей огромной массой сама затянула нас.
+// 1. Универсальный динамический расчет фазового угла по законам Кеплера
 struct ConditionStartBurn {
+    double mu;
+    ConditionStartBurn( double mu_val ) : mu( mu_val ) {}
+    
     bool operator()( const Telemetry& t ) const {
         Vector to_ship = t.ship_pos - t.earth_pos;
-        Vector to_moon = t.moon_pos - t.earth_pos;
+        Vector to_target = t.target_pos - t.earth_pos;
 
-        double dot = to_ship.x * to_moon.x + to_ship.y * to_moon.y;
-        double det = to_ship.x * to_moon.y - to_ship.y * to_moon.x;
-        double angle = std::atan2( det, dot );
+        double r1 = t.dist_to_earth;
+        double r2 = to_target.Length();
 
-        // Идеальный угол для перелёта ~ 1.68 рад.
-        return angle > 1.62 && angle < 1.72;
+        // Физика: Считаем время перелета (Гоман) и движение цели
+        double a_transfer = ( r1 + r2 ) / 2.0;
+        double time_of_flight = M_PI * std::sqrt( ( a_transfer * a_transfer * a_transfer ) / mu );
+        double target_angular_vel = std::sqrt( mu / ( r2 * r2 * r2 ) );
+        double target_travel_angle = target_angular_vel * time_of_flight;
+        
+        // Идеальный угол опережения
+        double ideal_phase_angle = M_PI - target_travel_angle;
+
+        double dot = to_ship.x * to_target.x + to_ship.y * to_target.y;
+        double det = to_ship.x * to_target.y - to_ship.y * to_target.x;
+        double current_angle = std::atan2( det, dot );
+        if ( current_angle < 0 ) current_angle += 2 * M_PI; // Нормализация 0..2PI
+
+        // Даем окно погрешности в 0.05 радиан
+        return std::abs( current_angle - ideal_phase_angle ) < 0.05;
     }
 };
 
 // 2. Умный разгон: вычисляем нужную скорость динамически через уравнение Виз-Вива!
 struct ConditionStopBurn {
     double mu;
-    double target_radius;
 
-    // Конструктор принимает гравитационный параметр (мю) и радиус целевой орбиты
-    ConditionStopBurn(double mu_val, double tr) : mu(mu_val), target_radius(tr) {}
+    // Конструктор принимает гравитационный параметр (мю)
+    ConditionStopBurn( double mu_val ) : mu( mu_val ) { }
 
     bool operator()( const Telemetry& t ) const {
         // Текущее фактическое расстояние до Земли (r1)
         double r_current = t.dist_to_earth;
-        
+        double target_orbit_radius = ( t.target_pos - t.earth_pos ).Length();
+
         // Уравнение Виз-Вива для эллиптической орбиты перелета Гомана.
-        // v = sqrt( GM * (2/r_current - 1/a) ), где a = (r_current + target_radius) / 2
-        double v_required = std::sqrt( mu * ( 2.0 / r_current - 2.0 / (r_current + target_radius) ) );
+        // v = sqrt( GM * (2/r_current - 1/a) ), где a = (r_current + target_orbit_radius) / 2
+        double v_required = std::sqrt( mu * ( 2.0 / r_current - 2.0 / (r_current + target_orbit_radius) ) );
         
         // Отключаем двигатель ровно в тот момент, когда набрали нужную скорость для текущего радиуса
         return t.ship_vel.Length() >= v_required; 
     }
 };
 
-// 3. Зона захвата (Sphere of Influence). Включаем умный контроллер сильно заранее!
+// 3. Зона захвата (Sphere of Influence). Включаем умный контроллер сильно заранее
 struct ConditionStartCapture {
     bool operator()( const Telemetry& t ) const {
-        return t.dist_to_moon <= 180.0;
+        return t.dist_to_target <= t.target_soi;
     }
 };
 
-// 4. Считаем, что мы на орбите, если дистанция около 45, а радиальная скорость (падение) близка к нулю.
+// 4. Динамическая орбита парковки
 struct ConditionOrbitEntered {
     bool operator()( const Telemetry& t ) const {
-        if (t.dist_to_moon > 50.0 || t.dist_to_moon < 40.0) return false;
+        double park_radius = t.target_radius + 15.0; 
+
+        if ( t.dist_to_target > park_radius + 3.0 || t.dist_to_target < park_radius - 3.0 ) return false;
         
-        Vector to_moon = t.moon_pos - t.ship_pos;
-        Vector dir = to_moon.Normalized();
-        Vector rel_vel = t.ship_vel - t.moon_vel;
+        Vector to_target = t.target_pos - t.ship_pos;
+        Vector direction = to_target.Normalized();
+        Vector rel_vel = t.ship_vel - t.target_vel;
         
-        // Радиальная скорость (насколько быстро мы отдаляемся/приближаемся к центру Луны)
-        double radial_v = std::abs(rel_vel.x * dir.x + rel_vel.y * dir.y);
-        return radial_v < 5.0; // Орбита стабилизировалась
+        // Радиальная скорость (насколько быстро мы отдаляемся/приближаемся к центру спутника)
+        double radial_velocity = std::abs( rel_vel.x * direction.x + rel_vel.y * direction.y );
+        return radial_velocity < 1.5; // Орбита стабилизировалась (орбита почти идеально круглая)
     }
 };
 
@@ -113,7 +136,7 @@ int main() {
 
     // Создаем и настраиваем камеру (View) для отдаления "вселенной"
     sf::View camera = window.getDefaultView();
-    camera.zoom( 1.2f ); 
+    camera.zoom( 1.6f ); 
 
     // Явно ставим центр камеры в центр экрана
     camera.setCenter( sf::Vector2f( window_width / 2.0f, window_height / 2.0f) );
@@ -126,28 +149,44 @@ int main() {
     double center_x = window_width / 2.0;
     double center_y = window_height / 2.0;
 
+    double selene_orbit_r = 800.0;
+
     // Расставляем объекты относительно центра экрана
     // Земля строго в центре (её масса 100 млн кг)
+    // Земля: 100 млн кг
     auto earth = std::make_shared<Planet>( "Earth", 100000000.0, 40.0, Vector( center_x, center_y ) );
 
-    // Луна: орбита 350, значит ставим её на 350 пикселей выше центра экрана (center_y - 350.0) (масса - 25 млн кг)
-    auto moon = std::make_shared<Moon>( "Moon", 25000000.0, 15.0, Vector( center_x, center_y - 350.0 ), Vector( 169.0, 0.0 ) );
+    // ИСПРАВЛЕНИЕ 1 (Луна): Делаем её реалистичной - 1.2% от массы Земли (1.2 млн кг).
+    // Её орбита 350 и скорость 169.0 остаются идеальными, так как они зависят только от Земли.
+    auto moon = std::make_shared<Moon>( "Moon", 1200000.0, 15.0, Vector( center_x, center_y - 350.0 ), Vector( 169.0, 0.0 ) );
+
+    // Селена будет на 6 часов + selene_orbit_r
+    // Вектор скорости меняем на отрицательный (-111.8), чтобы она летела по кругу правильно
+    // Селена теперь весит 1.5 млн (легкий дальний спутник). Орбита 800. Скорость -111.8.
+    // ИСПРАВЛЕНИЕ 2 (Селена): Делаем её легким дальним спутником (500 тыс кг).
+    // Орбита 800 и скорость -111.8. Теперь Луна не сможет столкнуть её с орбиты!
+    auto selene = std::make_shared<Moon>( "Selene", 500000.0, 10.0, Vector( center_x, center_y + selene_orbit_r ), Vector( -111.8, 0.0 ) );
 
     // Корабль: парковочная орбита 70, ставим на 70 пикселей правее центра (center_x + 70.0)
-    auto player_ship = std::make_shared<SpaceShip>( "Soyuz", 2100.0, 6000.0, 5.0, Vector( center_x + 70.0, center_y ), Vector( 0.0, 378.0 ) );
-
+    // ИСПРАВЛЕНИЕ 2: Поднимаем парковочную орбиту до 85.0. Скорость пересчитана на 343.0
+    auto player_ship = std::make_shared<SpaceShip>( "Soyuz", 2100.0, 6000.0, 5.0, Vector( center_x + 85.0, center_y ), Vector( 0.0, 343.0 ) );
     simulation.AddBody( earth );
     simulation.AddBody( moon );
+    simulation.AddBody( selene );
     simulation.AddBody( player_ship );
+
+    // --- ПЕРЕМЕННЫЕ ВЫБОРА ЦЕЛИ АВТОПИЛОТА ---
+    std::shared_ptr<ICelestialBody> current_target = moon; // По умолчанию целью будет Луна
+    int target_index = 0; // 0 - Луна, 1 - Селена
 
     Renderer renderer;
     sf::Clock physics_clock;
     sf::Clock imgui_clock; // Таймер специально для ImGui
     
-    // Делаем тягу мощнее, чтобы контроллер успевал выруливать в критических ситуациях
+    // Делаем мощную тягу, чтобы контроллер успевал выруливать в критических ситуациях
     const double kEnginePower = 4000000.0; // 4 млн
 
-    fsm::StateMachine<Telemetry> autopilot;
+    fsm::StateMachine<Telemetry> autopilot; // Инициализация автопилота
     
     autopilot.AddState( "Off", true );
     autopilot.AddState( "WaitAlignment" ); 
@@ -157,12 +196,12 @@ int main() {
     autopilot.AddState( "OrbitMoon", true); 
     autopilot.SetInitialState( "Off" );
 
-    autopilot.AddTransition( "WaitAlignment", "ProgradeBurn", ConditionStartBurn() );
-
     // Вычисляем гравитационный параметр Земли (мю = G * Mass)
     double mu = simulation.GetkGravity() * earth->GetMass();
-    // Передаём мю и радиус орбиты Луны (350.0) в условие остановки двигателя
-    autopilot.AddTransition( "ProgradeBurn", "Coast", ConditionStopBurn( mu, 350.0 ) );
+    // Передаём мю и радиус орбиты цели в условие остановки двигателя
+    autopilot.AddTransition( "WaitAlignment", "ProgradeBurn", ConditionStartBurn( mu ) );
+    // Автопилот сам вычислит орбиту цели.
+    autopilot.AddTransition( "ProgradeBurn", "Coast", ConditionStopBurn( mu ) );
     autopilot.AddTransition( "Coast", "Capture", ConditionStartCapture() );
     autopilot.AddTransition( "Capture", "OrbitMoon", ConditionOrbitEntered() );
 
@@ -181,18 +220,25 @@ int main() {
         }
 
         // Обновление логики ImGui на каждый кадр
-        ImGui::SFML::Update(window, imgui_clock.restart());
+        ImGui::SFML::Update( window, imgui_clock.restart() );
 
         Vector current_thrust( 0.0, 0.0 );
 
         if ( player_ship->GetFuelMass() > 0.0 ) {
+
+            // Считаем динамическую сферу влияния (сферу Лапласа) для выбранной цели
+            double target_orbit_radius = ( current_target->GetPosition() - earth->GetPosition() ).Length();
+            double target_soi = target_orbit_radius * std::pow( current_target->GetMass() / earth->GetMass(), 0.4 ) * 1.5;
             
             Telemetry t(
                 earth->GetPosition(), 
-                moon->GetPosition(), 
+                current_target->GetPosition(), 
                 player_ship->GetPosition(),
                 player_ship->GetVelocity(), 
-                moon->GetVelocity()
+                current_target->GetVelocity(),
+                current_target->GetMass(),
+                current_target->GetRadius(),
+                target_soi
             );
 
             bool state_changed = autopilot.Step(t);
@@ -206,60 +252,84 @@ int main() {
             if ( current_state == "WaitAlignment" || current_state == "Coast" || current_state == "OrbitMoon" ) {
                 current_thrust = Vector( 0.0, 0.0 ); 
             }
+            else if ( current_state == "OrbitMoon" ) {
+                // ИИ-СИСТЕМА УДЕРЖАНИЯ ОРБИТЫ (Station Keeping / RCS)
+                // Компенсируем гравитационные возмущения от Земли, чтобы орбита не превратилась в эллипс!
+                Vector to_target = current_target->GetPosition() - player_ship->GetPosition(); 
+                double dist = to_target.Length();
+                double target_radius = current_target->GetRadius() + 15.0; 
+                double dist_error = dist - target_radius; 
+
+                // Если гравитация Земли деформировала круг больше чем на 1 пиксель - корректируем
+                if ( std::abs(dist_error) > 1.0 ) {
+                    Vector dir_to_target = to_target.Normalized(); 
+                    Vector relative_vel = player_ship->GetVelocity() - current_target->GetVelocity();
+
+                    double desired_approach_v = dist_error * 0.8;
+                    if (desired_approach_v > 20.0) desired_approach_v = 20.0; 
+                    if (desired_approach_v < -20.0) desired_approach_v = -20.0; 
+
+                    double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / dist );
+
+                    Vector tangent(-dir_to_target.y, dir_to_target.x);
+                    if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
+                        tangent = Vector(dir_to_target.y, -dir_to_target.x);
+                    }
+
+                    Vector ideal_rel_vel = (dir_to_target * desired_approach_v) + (tangent * v_circ);
+                    Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
+                    Vector vel_error = target_vel_global - player_ship->GetVelocity();
+                    
+                    // Крошечные импульсы тяги (RCS), чтобы вернуть корабль на идеальный круг
+                    current_thrust = vel_error * 80000.0; 
+                    
+                    // Ограничиваем тягу маневровых двигателей 20% от основной мощности
+                    if ( current_thrust.Length() > kEnginePower * 0.2 ) {
+                        current_thrust = current_thrust.Normalized() * (kEnginePower * 0.2);
+                    }
+                } else {
+                    current_thrust = Vector( 0.0, 0.0 ); // Идеальный круг - отдыхаем
+                }
+            }
             else if ( current_state == "ProgradeBurn" ) {
                 // Разгон по вектору скорости (Prograde)
                 Vector prograde = player_ship->GetVelocity().Normalized();
                 current_thrust = prograde * kEnginePower;
             } 
             else if ( current_state == "Capture" ) {
-                // --- УМНЫЙ АЛГОРИТМ ЗАХВАТА ---
-                Vector to_moon = moon->GetPosition() - player_ship->GetPosition(); 
-                double dist = to_moon.Length();
-                Vector dir_to_moon = to_moon.Normalized(); // Вектор ОТ корабля К Луне
-                Vector relative_vel = player_ship->GetVelocity() - moon->GetVelocity();
+                Vector to_target = current_target->GetPosition() - player_ship->GetPosition(); 
+                double dist = to_target.Length();
+                Vector dir_to_target = to_target.Normalized(); 
+                Vector relative_vel = player_ship->GetVelocity() - current_target->GetVelocity();
 
-                // Целевая орбита
-                double target_radius = 45.0; 
-                double dist_error = dist - target_radius; // Насколько мы далеко от нужной орбиты
+                // Динамическая целевая орбита
+                double target_radius = current_target->GetRadius() + 15.0; 
+                double dist_error = dist - target_radius; 
 
-                // Желаемая скорость сближения (если далеко - сближаемся, если близко - выравниваемся)
                 double desired_approach_v = dist_error * 1.2;
-                if ( desired_approach_v > 80.0 ) desired_approach_v = 80.0; // Ограничиваем скорость падения
-                if ( desired_approach_v < -15.0 ) desired_approach_v = -15.0; // Позволяем чуть-чуть отлететь, если промахнулись
+                if (desired_approach_v > 80.0) desired_approach_v = 80.0; 
+                if (desired_approach_v < -15.0) desired_approach_v = -15.0; 
 
-                // Защита от деления на ноль
-                // Если корабль случайно пролетает слишком близко к центру Луны,
-                // ограничиваем минимальную дистанцию, чтобы v_circ не улетела в бесконечность
                 double safe_dist = dist;
-                if ( safe_dist < 15.0 ) safe_dist = 15.0;
+                if (safe_dist < current_target->GetRadius() + 5.0) safe_dist = current_target->GetRadius() + 5.0; 
 
-                // ИСПРАВЛЕНИЕ: Круговая скорость должна зависеть от ТЕКУЩЕГО расстояния (dist), 
-                // чтобы центробежная сила не превысила гравитацию и корабль не вылетел в космос!
-                double v_circ = std::sqrt( simulation.GetkGravity() * moon->GetMass() / safe_dist ); 
+                // Учитываем массу именно выбранной цели
+                double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / safe_dist );
 
-                // Выбираем вектор касательной (по направлению движения)
-                Vector tangent(-dir_to_moon.y, dir_to_moon.x);
+                Vector tangent(-dir_to_target.y, dir_to_target.x);
                 if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
-                    tangent = Vector(dir_to_moon.y, -dir_to_moon.x);
+                    tangent = Vector(dir_to_target.y, -dir_to_target.x);
                 }
 
-                // Строим идеальный вектор скорости (сближение + закручивание по орбите)
-                Vector ideal_rel_vel = (dir_to_moon * desired_approach_v) + (tangent * v_circ);
-                Vector target_vel_global = moon->GetVelocity() + ideal_rel_vel;
+                Vector ideal_rel_vel = (dir_to_target * desired_approach_v) + (tangent * v_circ);
+                Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
 
-                // Вычисляем ошибку и даем тягу
                 Vector vel_error = target_vel_global - player_ship->GetVelocity();
-                current_thrust = vel_error * 150000.0; // Сильный PD-коэффициент для четкого управления
+                current_thrust = vel_error * 150000.0; 
                 
                 if ( current_thrust.Length() > kEnginePower ) {
                     current_thrust = current_thrust.Normalized() * kEnginePower;
                 }
-            } 
-            else if ( current_state == "Off" ) {
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Up ) )    current_thrust.y -= kEnginePower;
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Down ) )  current_thrust.y += kEnginePower;
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) )  current_thrust.x -= kEnginePower;
-                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) current_thrust.x += kEnginePower;
             }
         }
 
@@ -269,8 +339,9 @@ int main() {
         if ( dt > 0.1 ) dt = 0.1; 
         // === ЛОГИКА СТОЛКНОВЕНИЙ И ВЫЛЕТА ЗА ПРЕДЕЛЫ ===
         if ( !is_game_over ) {
-            double dist_to_earth = (player_ship->GetPosition() - earth->GetPosition()).Length();
-            double dist_to_moon = (player_ship->GetPosition() - moon->GetPosition()).Length();
+            double dist_to_earth = ( player_ship->GetPosition() - earth->GetPosition() ).Length();
+            double dist_to_moon = ( player_ship->GetPosition() - moon->GetPosition() ).Length();
+            double dist_to_selene = ( player_ship->GetPosition() - selene->GetPosition() ).Length();
 
             // 1. Проверка на столкновение с Землей (Используем "мягкий хитбокс" 75% от радиуса)
             if ( dist_to_earth <= earth->GetRadius() * 0.75 ) {
@@ -282,7 +353,11 @@ int main() {
                 is_game_over = true;
                 game_over_reason = "CRITICAL FAILURE: Spaceship crashed into the Moon!";
             }
-            // 3. Проверка на вылет за пределы симуляции
+            else if ( dist_to_selene <= selene->GetRadius() * 0.75 ) {
+                is_game_over = true;
+                game_over_reason = "CRITICAL FAILURE: Spaceship crashed into Selene!";
+            }
+            // 4. Проверка на вылет за пределы симуляции
             else if ( dist_to_earth > 1200.0 ) {
                 is_game_over = true;
                 game_over_reason = "MISSION FAILED: Spaceship lost in deep space!";
@@ -322,21 +397,25 @@ int main() {
         // Мы вынесли это сюда, чтобы использовать и для статуса, и для спидометра
         std::string current_orbit;
         double dist_to_earth = (player_ship->GetPosition() - earth->GetPosition()).Length();
-        double dist_to_moon = (player_ship->GetPosition() - moon->GetPosition()).Length();
         
+        // Динамически вычисляем дистанцию до выбранной в UI цели
+        double dist_to_target = (player_ship->GetPosition() - current_target->GetPosition()).Length();
+        
+        // Вычисляем SOI для интерфейса
+        double ui_target_orbit_radius = (current_target->GetPosition() - earth->GetPosition()).Length();
+        double ui_target_soi = ui_target_orbit_radius * std::pow(current_target->GetMass() / earth->GetMass(), 0.4) * 1.5;
+
         double display_speed = 0.0;
 
-        if (dist_to_moon < 180.0) { 
-            current_orbit = "Moon Orbit";
-            // В зоне Луны показываем скорость относительно движущейся Луны (векторная разность)
-            display_speed = (player_ship->GetVelocity() - moon->GetVelocity()).Length();
-        } else if (dist_to_earth < 400.0) {
+        // Теперь интерфейс адаптируется под любую выбранную цель
+        if (dist_to_target < ui_target_soi) { 
+            current_orbit = "Target Orbit";
+            display_speed = (player_ship->GetVelocity() - current_target->GetVelocity()).Length();
+        } else if (dist_to_earth < 450.0) { // Слегка расширили зону Земли
             current_orbit = "Earth Parking Orbit";
-            // Земля у нас статична, ее скорость 0, поэтому берем абсолютную скорость корабля
             display_speed = player_ship->GetVelocity().Length();
         } else {
             current_orbit = "Transfer Trajectory"; 
-            // В глубоком космосе показываем абсолютную скорость
             display_speed = player_ship->GetVelocity().Length();
         }
 
@@ -392,22 +471,43 @@ int main() {
         ImGui::End();
 
         // --- ОКНО 2: АВТОПИЛОТ (Справа снизу) ---
-        ImGui::SetNextWindowPos( ImVec2( window_width - 270.f, window_height - 110.f ), ImGuiCond_Once );
+        ImGui::SetNextWindowPos( ImVec2( window_width - 270.f, window_height - 180.f ), ImGuiCond_Once );
         ImGuiWindowFlags auto_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
         ImGui::Begin("Autopilot Control", nullptr, auto_flags);
-            std::string current_state = autopilot.GetCurrentState();
-            ImGui::Text("AI State: %s", current_state.c_str());
+            // Чтобы не было конфликта имен переменных внутри окна, используем текущий статус автопилота
+            std::string autopilot_ui_state = autopilot.GetCurrentState();
+            ImGui::Text("AI State: %s", autopilot_ui_state.c_str());
             ImGui::Spacing();
-
-            if (current_state == "Off") {
+            
+            // --- НОВАЯ СЕКЦИЯ: ВЫБОР ЦЕЛИ ---
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Select Mission Target:");
+            
+            // Если автопилот запущен, блокируем выбор другой цели, чтобы не сломать полет
+            if (autopilot_ui_state != "Off" && autopilot_ui_state != "OrbitMoon") ImGui::BeginDisabled();
+            
+            if (ImGui::RadioButton("Moon", &target_index, 0)) {
+                current_target = moon;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Selene", &target_index, 1)) {
+                current_target = selene;
+            }
+            
+            if (autopilot_ui_state != "Off" && autopilot_ui_state != "OrbitMoon") ImGui::EndDisabled();
+            // ---------------------------------
+            
+            ImGui::Spacing();
+            
+            // --- ВОЗВРАЩАЕМ ЦВЕТА КНОПКИ (ИСПРАВЛЕНИЕ ОШИБКИ) ---
+            if (autopilot_ui_state == "Off") {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.4f, 0.4f, 1.0f)); // Серый цвет, если выключен
             } else {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.1f, 1.0f)); // Зеленый, если работает
             }
 
             if (ImGui::Button("ENGAGE AUTOPILOT", ImVec2(250.f, 40.f))) {
-                if (current_state == "Off" || current_state == "OrbitMoon") {
+                if (autopilot_ui_state == "Off" || autopilot_ui_state == "OrbitMoon") {
                     autopilot.SetCurrentState("WaitAlignment");
                     std::cout << ">> Autopilot: ENGAGED. Waiting for phase alignment...\n";
                 } else {
@@ -415,7 +515,10 @@ int main() {
                     std::cout << ">> Autopilot: DISABLED. Manual control.\n";
                 }
             }
-            ImGui::PopStyleColor();
+            
+            // Теперь этой команде есть что "снимать" со стека!
+            ImGui::PopStyleColor(); 
+            // ---------------------------------------------------
         ImGui::End();
         // ===================================
 
@@ -429,7 +532,7 @@ int main() {
             ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.0f, 0.0f, 0.95f));
             ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-            ImGui::Begin("SYSTEM ALERT", nullptr, over_flags);
+            ImGui::Begin( "SYSTEM ALERT", nullptr, over_flags );
                 ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", game_over_reason.c_str());
                 ImGui::Spacing();
                 ImGui::Separator();

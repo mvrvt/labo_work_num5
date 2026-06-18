@@ -1,20 +1,23 @@
 #include "Renderer.hpp"
 #include "SpaceShip.hpp"
 #include <iostream>
+#include <cmath> // Не забудь добавить для std::pow
 
 Renderer::Renderer() {
-    // Код для того, чтобы Земля отображалась как изображение Земли, а не как синий круг
     if ( !earth_texture_.loadFromFile( "assets/Earth.png" ) ) {
-        std::cerr << "Error: Could not find assets/Earth.png Check your working directory!" << std::endl;
+        std::cerr << "Error: Could not find assets/Earth.png" << std::endl;
     }
     earth_texture_.setSmooth( true ); 
 
-    // Отрисовка текстуры Луны
     if ( !moon_texture_.loadFromFile( "assets/Moon.png" ) ) {
-        std::cerr << "Error: Could not find assets/Moon.png Check your working directory!" << std::endl;
+        std::cerr << "Error: Could not find assets/Moon.png" << std::endl;
     }
     moon_texture_.setSmooth( true );
 
+    if ( !selene_texture_.loadFromFile( "assets/Selene(Pluto).png" ) ) {
+        std::cerr << "Error: couldn't find assets/Selene(Pluto).png" << std::endl;
+    }
+    selene_texture_.setSmooth( true );
 }
 
 void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelestialBody>>* universe ) const {
@@ -27,26 +30,38 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
         if ( body->GetName() == "Earth" ) {
             // Траектория орбиты Луны
             sf::CircleShape moon_orbit( 350.f );
-            moon_orbit.setPointCount( 150 ); // Сглаживание правильного многоугольника орбиты Луны, чтобы он выглядел как окружность
+            moon_orbit.setPointCount( 150 ); 
             moon_orbit.setOrigin( {350.f, 350.f} );
             moon_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
             moon_orbit.setFillColor( sf::Color::Transparent );
             moon_orbit.setOutlineThickness( 1.f );
-            moon_orbit.setOutlineColor( sf::Color(100, 100, 100, 100) ); // Полупрозрачный серый
+            moon_orbit.setOutlineColor( sf::Color(100, 100, 100, 100) ); 
             window.draw( moon_orbit );
             
             // Траектория парковочной орбиты Корабля
             sf::CircleShape ship_orbit( 70.f );
-            ship_orbit.setPointCount( 100 ); // Сглаживание орбиты корабля
+            ship_orbit.setPointCount( 100 ); 
             ship_orbit.setOrigin( {70.f, 70.f} );
             ship_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
             ship_orbit.setFillColor( sf::Color::Transparent );
             ship_orbit.setOutlineThickness( 1.f );
-            ship_orbit.setOutlineColor( sf::Color(100, 255, 100, 100) ); // Полупрозрачный зеленый
+            ship_orbit.setOutlineColor( sf::Color(100, 255, 100, 100) ); 
             window.draw( ship_orbit );
+
+            // Траектория орбиты Селены
+            sf::CircleShape selene_orbit( 800.f );
+            selene_orbit.setPointCount( 200 ); 
+            selene_orbit.setOrigin( {800.f, 800.f} );
+            
+            // ИСПРАВЛЕНИЕ: Теперь орбита Селены привязана к центру Земли!
+            selene_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
+            
+            selene_orbit.setFillColor( sf::Color::Transparent );
+            selene_orbit.setOutlineThickness( 1.f );
+            selene_orbit.setOutlineColor( sf::Color( 100, 100, 100, 100 ) ); 
+            window.draw( selene_orbit );
         }
         else if ( body->GetName() == "Moon" ) {
-            // Сфера гравитационного влияния Луны (Capture zone = 100)
             sf::CircleShape capture_zone( 100.f );
             capture_zone.setOrigin( {100.f, 100.f} );
             capture_zone.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
@@ -54,6 +69,17 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
             capture_zone.setOutlineThickness( 1.f );
             capture_zone.setOutlineColor( sf::Color(100, 100, 255, 120) );
             window.draw( capture_zone );
+        } 
+        else if ( body->GetName() == "Selene" ) {
+            // Динамический радиус зоны влияния (теперь будет около 80 пикселей)
+            double soi = 800.0 * std::pow(300000.0 / 100000000.0, 0.4); 
+            sf::CircleShape soi_shape( static_cast<float>(soi) );
+            soi_shape.setOrigin( {static_cast<float>(soi), static_cast<float>(soi)} );
+            soi_shape.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
+            soi_shape.setFillColor( sf::Color( 100, 50, 150, 40 ) ); // Фиолетовая зона
+            soi_shape.setOutlineThickness( 1.f );
+            soi_shape.setOutlineColor( sf::Color( 150, 100, 200, 120 ) );
+            window.draw( soi_shape );
         }
     }
 
@@ -69,8 +95,11 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
             shape.setTexture( &earth_texture_ );
         } else if ( body->GetName() == "Moon" ) {
             shape.setTexture( &moon_texture_ );
-            // shape.setFillColor( sf::Color( 160, 160, 160 ) ); 
-        } else { // Корабль
+        } else if ( body->GetName() == "Selene" ) {
+            shape.setFillColor( sf::Color( 180, 150, 220 ) );
+            shape.setTexture( &selene_texture_ );
+        } else { 
+            // Корабль (красная точка)
             shape.setFillColor( sf::Color::Red );
         }
 
