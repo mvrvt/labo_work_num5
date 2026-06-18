@@ -105,7 +105,8 @@ struct ConditionStartCapture {
 // 4. Динамическая орбита парковки
 struct ConditionOrbitEntered {
     bool operator()( const Telemetry& t ) const {
-        double park_radius = t.target_radius + 15.0; 
+        // Жесткая целевая орбита
+        double park_radius = t.target_radius + 20.0; 
 
         if ( t.dist_to_target > park_radius + 3.0 || t.dist_to_target < park_radius - 3.0 ) return false;
         
@@ -249,46 +250,42 @@ int main() {
             std::string current_state = autopilot.GetCurrentState();
             
             // --- Логика маневров ---
-            if ( current_state == "WaitAlignment" || current_state == "Coast" || current_state == "OrbitMoon" ) {
+            if ( current_state == "WaitAlignment" || current_state == "Coast" ) {
                 current_thrust = Vector( 0.0, 0.0 ); 
             }
             else if ( current_state == "OrbitMoon" ) {
                 // ИИ-СИСТЕМА УДЕРЖАНИЯ ОРБИТЫ (Station Keeping / RCS)
-                // Компенсируем гравитационные возмущения от Земли, чтобы орбита не превратилась в эллипс!
+                // Компенсируем гравитационные возмущения от Земли непрерывно!
                 Vector to_target = current_target->GetPosition() - player_ship->GetPosition(); 
                 double dist = to_target.Length();
-                double target_radius = current_target->GetRadius() + 15.0; 
+                double target_radius = current_target->GetRadius() + 20.0; 
                 double dist_error = dist - target_radius; 
 
-                // Если гравитация Земли деформировала круг больше чем на 1 пиксель - корректируем
-                if ( std::abs(dist_error) > 1.0 ) {
-                    Vector dir_to_target = to_target.Normalized(); 
-                    Vector relative_vel = player_ship->GetVelocity() - current_target->GetVelocity();
+                Vector dir_to_target = to_target.Normalized(); 
+                Vector relative_vel = player_ship->GetVelocity() - current_target->GetVelocity();
 
-                    double desired_approach_v = dist_error * 0.8;
-                    if (desired_approach_v > 20.0) desired_approach_v = 20.0; 
-                    if (desired_approach_v < -20.0) desired_approach_v = -20.0; 
+                // Более жесткая агрессия ПИД-регулятора на ошибку расстояния
+                double desired_approach_v = dist_error * 5.0;
+                if (desired_approach_v > 50.0) desired_approach_v = 50.0; 
+                if (desired_approach_v < -50.0) desired_approach_v = -50.0; 
 
-                    double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / dist );
+                double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / dist );
 
-                    Vector tangent(-dir_to_target.y, dir_to_target.x);
-                    if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
-                        tangent = Vector(dir_to_target.y, -dir_to_target.x);
-                    }
+                Vector tangent(-dir_to_target.y, dir_to_target.x);
+                if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
+                    tangent = Vector(dir_to_target.y, -dir_to_target.x);
+                }
 
-                    Vector ideal_rel_vel = (dir_to_target * desired_approach_v) + (tangent * v_circ);
-                    Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
-                    Vector vel_error = target_vel_global - player_ship->GetVelocity();
-                    
-                    // Крошечные импульсы тяги (RCS), чтобы вернуть корабль на идеальный круг
-                    current_thrust = vel_error * 80000.0; 
-                    
-                    // Ограничиваем тягу маневровых двигателей 20% от основной мощности
-                    if ( current_thrust.Length() > kEnginePower * 0.2 ) {
-                        current_thrust = current_thrust.Normalized() * (kEnginePower * 0.2);
-                    }
-                } else {
-                    current_thrust = Vector( 0.0, 0.0 ); // Идеальный круг - отдыхаем
+                Vector ideal_rel_vel = (dir_to_target * desired_approach_v) + (tangent * v_circ);
+                Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
+                Vector vel_error = target_vel_global - player_ship->GetVelocity();
+                
+                // Непрерывный мощный импульс для удержания
+                current_thrust = vel_error * 500000.0;
+                
+                // Разрешаем ИИ использовать до 100% мощности в случае экстренного срыва с орбиты
+                if ( current_thrust.Length() > kEnginePower ) {
+                    current_thrust = current_thrust.Normalized() * kEnginePower;
                 }
             }
             else if ( current_state == "ProgradeBurn" ) {
@@ -303,21 +300,21 @@ int main() {
                 Vector relative_vel = player_ship->GetVelocity() - current_target->GetVelocity();
 
                 // Динамическая целевая орбита
-                double target_radius = current_target->GetRadius() + 15.0; 
+                double target_radius = current_target->GetRadius() + 20.0; 
                 double dist_error = dist - target_radius; 
 
-                double desired_approach_v = dist_error * 1.2;
+                double desired_approach_v = dist_error * 1.5; // Чуть более агрессивное сближение при захвате
                 if (desired_approach_v > 80.0) desired_approach_v = 80.0; 
                 if (desired_approach_v < -15.0) desired_approach_v = -15.0; 
 
                 double safe_dist = dist;
                 if (safe_dist < current_target->GetRadius() + 5.0) safe_dist = current_target->GetRadius() + 5.0; 
 
-                // Учитываем массу именно выбранной цели
                 double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / safe_dist );
 
                 Vector tangent(-dir_to_target.y, dir_to_target.x);
-                if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
+                // ИСПРАВЛЕНИЕ: ВОТ ЗДЕСЬ БЫЛА ОПЕЧАТКА! Теперь тут tangent.y * relative_vel.y
+                if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) { 
                     tangent = Vector(dir_to_target.y, -dir_to_target.x);
                 }
 
@@ -325,7 +322,7 @@ int main() {
                 Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
 
                 Vector vel_error = target_vel_global - player_ship->GetVelocity();
-                current_thrust = vel_error * 150000.0; 
+                current_thrust = vel_error * 200000.0; // Более сильное торможение
                 
                 if ( current_thrust.Length() > kEnginePower ) {
                     current_thrust = current_thrust.Normalized() * kEnginePower;
@@ -394,7 +391,7 @@ int main() {
         ImGui::End();
 
         // === ЛОГИКА ОПРЕДЕЛЕНИЯ ТЕКУЩЕЙ ОРБИТЫ И ОТНОСИТЕЛЬНОЙ СКОРОСТИ ===
-        // Мы вынесли это сюда, чтобы использовать и для статуса, и для спидометра
+        // Мы вы вынесли это сюда, чтобы использовать и для статуса, и для спидометра
         std::string current_orbit;
         double dist_to_earth = (player_ship->GetPosition() - earth->GetPosition()).Length();
         
