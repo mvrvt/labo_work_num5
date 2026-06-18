@@ -16,11 +16,11 @@ public:
     [[nodiscard]] virtual Vector      GetPosition() const = 0;
     [[nodiscard]] virtual Vector      GetVelocity() const = 0; 
 
-    // Является ли объект статичным (звезда или что-то двигающееся)
+    // Является ли объект статичным 
     // Пригодится для оптимизации: статичным телам не нужно считать Рунге-Кутту
     [[nodiscard]] virtual bool IsStatic() const = 0;
 
-    // Возвращает вектор тяги двигателя (для планет будет просто 0,0)
+    // Возвращает вектор тяги двигателя (для планеты и спутников будет просто 0,0)
     [[nodiscard]] virtual Vector GetThrust() const = 0;
 
     // Setter

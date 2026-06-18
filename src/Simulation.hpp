@@ -18,7 +18,6 @@ public:
     [[nodiscard]] Sequence<std::shared_ptr<ICelestialBody>>* GetUniverse() const;
 
 private:
-    // std::vector<std::shared_ptr<ICelestialBody> > universe_;
     Sequence<std::shared_ptr<ICelestialBody>>* universe_;
     const double kGravity_ = 0.1;
 

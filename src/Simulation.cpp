@@ -19,6 +19,8 @@ Sequence<std::shared_ptr<ICelestialBody>>* Simulation::GetUniverse() const {
 }
 
 Vector Simulation::CalculateAcceleration( const std::shared_ptr<ICelestialBody>& target, const Vector& current_position ) const {
+    // Реализован закон всемирного тяготения Ньютона
+
     Vector total_force = target->GetThrust();
 
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
@@ -44,7 +46,6 @@ const double Simulation::GetkGravity() const {
 }
 
 void Simulation::Update( double dt ) {
-    // ИСПРАВЛЕНИЕ: Используем MutableArraySequence вместо абстрактного ArraySequence
     MutableArraySequence<Vector> new_positions;
     MutableArraySequence<Vector> new_velocities;
 
