@@ -39,6 +39,10 @@ Vector Simulation::CalculateAcceleration( const std::shared_ptr<ICelestialBody>&
     return total_force / target->GetMass();
 }
 
+const double Simulation::GetkGravity() const {
+    return kGravity_;
+}
+
 void Simulation::Update( double dt ) {
     // ИСПРАВЛЕНИЕ: Используем MutableArraySequence вместо абстрактного ArraySequence
     MutableArraySequence<Vector> new_positions;

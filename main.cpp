@@ -47,14 +47,15 @@ struct ConditionStartBurn {
         double det = to_ship.x * to_moon.y - to_ship.y * to_moon.x;
         double angle = std::atan2( det, dot );
 
-        return angle > 1.50 && angle < 1.60;
+        // Идеальный угол для перелёта ~ 1.68 рад.
+        return angle > 1.62 && angle < 1.72;
     }
 };
 
-// 2. Разгоняемся ровно до 480. Этого хватит, чтобы долететь до орбиты Луны.
+// 2. Разгоняемся ровно до 488. Этого хватит, чтобы долететь до орбиты Луны.
 struct ConditionStopBurn {
     bool operator()( const Telemetry& t ) const {
-        return t.ship_vel.Length() >= 480.0; 
+        return t.ship_vel.Length() >= 488.0; 
     }
 };
 
@@ -111,14 +112,14 @@ int main() {
     double center_y = window_height / 2.0;
 
     // Расставляем объекты относительно центра экрана
-    // Земля строго в центре
-    auto earth = std::make_shared<Planet>( "Earth", 10000.0, 40.0, Vector( center_x, center_y ) );
+    // Земля строго в центре (её масса 100 млн кг)
+    auto earth = std::make_shared<Planet>( "Earth", 100000000.0, 40.0, Vector( center_x, center_y ) );
 
-    // Луна: орбита 350, значит ставим её на 350 пикселей выше центра экрана (center_y - 350.0)
-    auto moon = std::make_shared<Moon>( "Moon", 2500.0, 15.0, Vector( center_x, center_y - 350.0 ), Vector( 169.0, 0.0 ) );
+    // Луна: орбита 350, значит ставим её на 350 пикселей выше центра экрана (center_y - 350.0) (масса - 25 млн кг)
+    auto moon = std::make_shared<Moon>( "Moon", 25000000.0, 15.0, Vector( center_x, center_y - 350.0 ), Vector( 169.0, 0.0 ) );
 
     // Корабль: парковочная орбита 70, ставим на 70 пикселей правее центра (center_x + 70.0)
-    auto player_ship = std::make_shared<SpaceShip>( "Soyuz", 0.01, 0.8, 5.0, Vector( center_x + 70.0, center_y ), Vector( 0.0, 378.0 ) );
+    auto player_ship = std::make_shared<SpaceShip>( "Soyuz", 2100.0, 6000.0, 5.0, Vector( center_x + 70.0, center_y ), Vector( 0.0, 378.0 ) );
 
     simulation.AddBody( earth );
     simulation.AddBody( moon );
@@ -129,7 +130,7 @@ int main() {
     sf::Clock imgui_clock; // Таймер специально для ImGui
     
     // Делаем тягу мощнее, чтобы контроллер успевал выруливать в критических ситуациях
-    const double kEnginePower = 400.0; 
+    const double kEnginePower = 4000000.0; // 4 млн
 
     fsm::StateMachine<Telemetry> autopilot;
     
@@ -200,11 +201,18 @@ int main() {
 
                 // Желаемая скорость сближения (если далеко - сближаемся, если близко - выравниваемся)
                 double desired_approach_v = dist_error * 1.2;
-                if (desired_approach_v > 80.0) desired_approach_v = 80.0; // Ограничиваем скорость падения
-                if (desired_approach_v < -15.0) desired_approach_v = -15.0; // Позволяем чуть-чуть отлететь, если промахнулись
+                if ( desired_approach_v > 80.0 ) desired_approach_v = 80.0; // Ограничиваем скорость падения
+                if ( desired_approach_v < -15.0 ) desired_approach_v = -15.0; // Позволяем чуть-чуть отлететь, если промахнулись
 
-                // Идеальная круговая скорость на целевой орбите
-                double v_circ = std::sqrt( 1000.0 * 2500.0 / target_radius );
+                // Защита от деления на ноль
+                // Если корабль случайно пролетает слишком близко к центру Луны,
+                // ограничиваем минимальную дистанцию, чтобы v_circ не улетела в бесконечность
+                double safe_dist = dist;
+                if ( safe_dist < 15.0 ) safe_dist = 15.0;
+
+                // ИСПРАВЛЕНИЕ: Круговая скорость должна зависеть от ТЕКУЩЕГО расстояния (dist), 
+                // чтобы центробежная сила не превысила гравитацию и корабль не вылетел в космос!
+                double v_circ = std::sqrt( simulation.GetkGravity() * moon->GetMass() / safe_dist ); 
 
                 // Выбираем вектор касательной (по направлению движения)
                 Vector tangent(-dir_to_moon.y, dir_to_moon.x);
@@ -218,7 +226,7 @@ int main() {
 
                 // Вычисляем ошибку и даем тягу
                 Vector vel_error = target_vel_global - player_ship->GetVelocity();
-                current_thrust = vel_error * 15.0; // Сильный PD-коэффициент для четкого управления
+                current_thrust = vel_error * 150000.0; // Сильный PD-коэффициент для четкого управления
                 
                 if ( current_thrust.Length() > kEnginePower ) {
                     current_thrust = current_thrust.Normalized() * kEnginePower;

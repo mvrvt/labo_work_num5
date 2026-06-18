@@ -13,12 +13,14 @@ public:
     void AddBody( std::shared_ptr<ICelestialBody> body ); // Добавить тело во вселенную
     void Update( double dt );                             // Шаг физики
 
+    const double GetkGravity() const;
+
     [[nodiscard]] Sequence<std::shared_ptr<ICelestialBody>>* GetUniverse() const;
 
 private:
     // std::vector<std::shared_ptr<ICelestialBody> > universe_;
     Sequence<std::shared_ptr<ICelestialBody>>* universe_;
-    const double kGravity_ = 1000.0;
+    const double kGravity_ = 0.1;
 
     // Вспомогательный метод для RK4
     // Считает ускорение, которое действовало бы на target, если бы он находился в точке current_position

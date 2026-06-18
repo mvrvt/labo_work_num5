@@ -217,7 +217,6 @@ public:
     };
 
     struct MinMaxAvgReducer {
-        // Убрали лишние typename Sequence<T>::, так как структура уже внутри класса
         MinMaxAvg operator()(MinMaxAvg result, const T& value) const {
             if ( value < result.min ) { result.min = value; }
             if ( value > result.max ) { result.max = value; }
@@ -235,21 +234,7 @@ public:
         T first = Get( 0 );
         MinMaxAvg initial = { first, first, 0.0, 0 };
 
-        // ИСПРАВЛЕНИЕ: Убрано <T>, так как MinMaxAvgReducer не является шаблоном
         return Reduce<MinMaxAvg>( MinMaxAvgReducer(), initial ); 
-
-        // return Reduce<MinMaxAvg>(
-        //     std::function<MinMaxAvg(MinMaxAvg, const T&)>(
-        //         []( MinMaxAvg result, const T& value ) -> MinMaxAvg {
-        //             if ( value < result.min ) { result.min = value; }
-        //             if ( value > result.max ) { result.max = value; }
-        //             result.sum += static_cast<double>( value );
-        //             ++result.count;
-        //             return result;
-        //         }
-        //     ),
-        //     initial
-        // );
     }
 
     double GetAvg() const {
