@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <optional> 
+#include <string>
 
 #include "imgui.h"
 #include "imgui-SFML.h"
@@ -52,10 +53,24 @@ struct ConditionStartBurn {
     }
 };
 
-// 2. Разгоняемся ровно до 488. Этого хватит, чтобы долететь до орбиты Луны.
+// 2. Умный разгон: вычисляем нужную скорость динамически через уравнение Виз-Вива!
 struct ConditionStopBurn {
+    double mu;
+    double target_radius;
+
+    // Конструктор принимает гравитационный параметр (мю) и радиус целевой орбиты
+    ConditionStopBurn(double mu_val, double tr) : mu(mu_val), target_radius(tr) {}
+
     bool operator()( const Telemetry& t ) const {
-        return t.ship_vel.Length() >= 488.0; 
+        // Текущее фактическое расстояние до Земли (r1)
+        double r_current = t.dist_to_earth;
+        
+        // Уравнение Виз-Вива для эллиптической орбиты перелета Гомана.
+        // v = sqrt( GM * (2/r_current - 1/a) ), где a = (r_current + target_radius) / 2
+        double v_required = std::sqrt( mu * ( 2.0 / r_current - 2.0 / (r_current + target_radius) ) );
+        
+        // Отключаем двигатель ровно в тот момент, когда набрали нужную скорость для текущего радиуса
+        return t.ship_vel.Length() >= v_required; 
     }
 };
 
@@ -143,9 +158,17 @@ int main() {
     autopilot.SetInitialState( "Off" );
 
     autopilot.AddTransition( "WaitAlignment", "ProgradeBurn", ConditionStartBurn() );
-    autopilot.AddTransition( "ProgradeBurn", "Coast", ConditionStopBurn() );
+
+    // Вычисляем гравитационный параметр Земли (мю = G * Mass)
+    double mu = simulation.GetkGravity() * earth->GetMass();
+    // Передаём мю и радиус орбиты Луны (350.0) в условие остановки двигателя
+    autopilot.AddTransition( "ProgradeBurn", "Coast", ConditionStopBurn( mu, 350.0 ) );
     autopilot.AddTransition( "Coast", "Capture", ConditionStartCapture() );
     autopilot.AddTransition( "Capture", "OrbitMoon", ConditionOrbitEntered() );
+
+    // Флаги состояния симуляции
+    bool is_game_over = false;
+    std::string game_over_reason = "";
 
     while ( window.isOpen() ) {
         while ( const std::optional<sf::Event> event = window.pollEvent() ) {
@@ -244,7 +267,35 @@ int main() {
 
         double dt = physics_clock.restart().asSeconds();
         if ( dt > 0.1 ) dt = 0.1; 
-        simulation.Update( dt );
+        // === ЛОГИКА СТОЛКНОВЕНИЙ И ВЫЛЕТА ЗА ПРЕДЕЛЫ ===
+        if ( !is_game_over ) {
+            double dist_to_earth = (player_ship->GetPosition() - earth->GetPosition()).Length();
+            double dist_to_moon = (player_ship->GetPosition() - moon->GetPosition()).Length();
+
+            // 1. Проверка на столкновение с Землей (Используем "мягкий хитбокс" 75% от радиуса)
+            if ( dist_to_earth <= earth->GetRadius() * 0.75 ) {
+                is_game_over = true;
+                game_over_reason = "CRITICAL FAILURE: Spaceship crashed into Earth!";
+            }
+            // 2. Проверка на столкновение с Луной (Даем такую же поблажку)
+            else if ( dist_to_moon <= moon->GetRadius() * 0.75 ) {
+                is_game_over = true;
+                game_over_reason = "CRITICAL FAILURE: Spaceship crashed into the Moon!";
+            }
+            // 3. Проверка на вылет за пределы симуляции
+            else if ( dist_to_earth > 1200.0 ) {
+                is_game_over = true;
+                game_over_reason = "MISSION FAILED: Spaceship lost in deep space!";
+            }
+
+            // Обновляем физику ТОЛЬКО если всё в порядке
+            if ( !is_game_over ) {
+                simulation.Update( dt );
+            } else {
+                player_ship->SetThrust(Vector(0.0, 0.0));
+                autopilot.SetCurrentState("Off");
+            }
+        }
 
         // ===== ОТРИСОВКА ИНТЕРФЕЙСА IMGUI =====
 
@@ -367,6 +418,31 @@ int main() {
             ImGui::PopStyleColor();
         ImGui::End();
         // ===================================
+
+        // --- ОКНО ПОРАЖЕНИЯ (GAME OVER) ---
+        if ( is_game_over ) {
+            // Центрируем окно ровно по середине экрана
+            ImGui::SetNextWindowPos(ImVec2(window_width / 2.0f, window_height / 2.0f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGuiWindowFlags over_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
+            
+            // Задаем красный цвет для рамки окна, чтобы выглядело как тревога
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.0f, 0.0f, 0.95f));
+            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+            ImGui::Begin("SYSTEM ALERT", nullptr, over_flags);
+                ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", game_over_reason.c_str());
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                
+                // Добавляем кнопку выхода
+                if (ImGui::Button("EXIT SIMULATION", ImVec2(300.f, 40.f))) {
+                    window.close(); // Закрываем программу
+                }
+            ImGui::End();
+
+            ImGui::PopStyleColor(2);
+        }
 
         window.clear( sf::Color::Black );
         renderer.Draw( window, simulation.GetUniverse() );
