@@ -14,24 +14,24 @@ set( CMAKE_PREFIX_PATH "/opt/homebrew" )
 find_package( SFML 3 COMPONENTS Graphics Window System REQUIRED )
 
 # === ИНТЕГРАЦИЯ IMGUI И IMGUI-SFML ===
-set(BUILD_SHARED_LIBS ON)
-set(SFML_STATIC_LIBRARIES OFF)
+set( BUILD_SHARED_LIBS ON )
+set( SFML_STATIC_LIBRARIES OFF )
 
 include(FetchContent)
 
-# 1. Скачиваем ядро Dear ImGui (без него мост не соберется)
+# 1. Скачиваем ядро Dear ImGui 
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG v1.91.5
 )
-FetchContent_GetProperties(imgui)
-if(NOT imgui_POPULATED)
-    FetchContent_Populate(imgui)
+FetchContent_GetProperties( imgui )
+if ( NOT imgui_POPULATED )
+    FetchContent_Populate( imgui )
 endif()
 
 # Передаем путь к скачанному ядру в обязательную переменную IMGUI_DIR
-set(IMGUI_DIR ${imgui_SOURCE_DIR})
+set( IMGUI_DIR ${imgui_SOURCE_DIR} )
 
 # 2. Теперь скачиваем мост ImGui-SFML
 FetchContent_Declare(

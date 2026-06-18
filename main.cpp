@@ -38,12 +38,12 @@ struct Telemetry {
     Telemetry( Vector e, Vector tp, Vector s, Vector sv, Vector tv, double t_mass, double t_rad, double t_soi ) 
         : earth_pos( e ), target_pos( tp ), ship_pos( s ), ship_vel( sv ), target_vel( tv ), 
           target_mass( t_mass ), target_radius( t_rad ), target_soi( t_soi ) { 
-        dist_to_earth = (s - e).Length();
-        dist_to_target = (s - tp).Length();
+        dist_to_earth = ( s - e ).Length();
+        dist_to_target = ( s - tp ).Length();
     }
 };
 
-// Универсальный динамический расчет фазового угла по законам Кеплера
+// Универсальный динамический расчет фазового угла по законам Кеплера (Условие начала манёвра)
 struct ConditionStartBurn {
     // Подсчёт фазового угла для перелёта Гомана
         
@@ -58,7 +58,7 @@ struct ConditionStartBurn {
         double r2 = to_target.Length();
 
         // Физика: Считаем время перелета (Гоман) и движение цели
-        double a_transfer = ( r1 + r2 ) / 2.0;
+        double a_transfer = ( r1 + r2 ) / 2.0; // большая полуось будущей эллиптической орбиты перелёта
         double time_of_flight = M_PI * std::sqrt( ( a_transfer * a_transfer * a_transfer ) / mu );
         double target_angular_vel = std::sqrt( mu / ( r2 * r2 * r2 ) );
         double target_travel_angle = target_angular_vel * time_of_flight;
@@ -76,7 +76,7 @@ struct ConditionStartBurn {
     }
 };
 
-// Умный разгон: вычисляем нужную скорость динамически через уравнение Виз-Вива
+// Умный разгон: вычисляем нужную скорость динамически через уравнение Виз-Вива (Условие выключения двигателя)
 struct ConditionStopBurn {
     double mu;
 
@@ -97,17 +97,17 @@ struct ConditionStopBurn {
     }
 };
 
-// 3. Зона захвата (Sphere of Influence). Включаем умный контроллер сильно заранее
+// Зона захвата (Sphere of Influence). Включаем умный контроллер сильно заранее (Условие входа в зону захвата)
 struct ConditionStartCapture {
     bool operator()( const Telemetry& t ) const {
         return t.dist_to_target <= t.target_soi;
     }
 };
 
-// 4. Динамическая орбита парковки
+// Динамическая орбита парковки (Условие успешной парковки)
 struct ConditionOrbitEntered {
     bool operator()( const Telemetry& t ) const {
-        // Жесткая целевая орбита
+        // Жесткая целевая орбита 
         double park_radius = t.target_radius + 20.0; 
 
         if ( t.dist_to_target > park_radius + 3.0 || t.dist_to_target < park_radius - 3.0 ) return false;
@@ -190,7 +190,7 @@ int main() {
     autopilot.AddState( "ProgradeBurn" );   // Импульс/Разгон по направлению движения
     autopilot.AddState( "Coast" );          // Полёт по инерции
     autopilot.AddState( "Capture" );        // Захват
-    autopilot.AddState( "OrbitMoon", true); // Полёт по орбите спутника
+    autopilot.AddState( "OrbitMoon", true); // Удержание орбиты спутника
     autopilot.SetInitialState( "Off" );
 
     // Вычисляем гравитационный параметр Земли (мю = G * Mass)
@@ -246,15 +246,32 @@ int main() {
             std::string current_state = autopilot.GetCurrentState();
             
             // --- Логика маневров ---
-            if ( current_state == "WaitAlignment" || current_state == "Coast" ) {
+            if ( current_state == "Off" ) {
+                // Задаем базовую мощность двигателей для ручного управления (например, 1.5 млн Ньютон)
+                double manual_power = 1500000.0; 
+
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Up ) ) {
+                    current_thrust.y = -manual_power; // Летим вверх (в SFML ось Y направлена вниз)
+                }
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Down ) ) {
+                    current_thrust.y = manual_power;  // Летим вниз
+                }
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) ) {
+                    current_thrust.x = -manual_power; // Летим влево
+                }
+                if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) {
+                    current_thrust.x = manual_power;  // Летим вправо
+                }
+            }
+            else if ( current_state == "WaitAlignment" || current_state == "Coast" ) {
                 current_thrust = Vector( 0.0, 0.0 ); 
             }
             else if ( current_state == "OrbitMoon" ) {
                 // СИСТЕМА УДЕРЖАНИЯ ОРБИТЫ (Station Keeping / RCS)
                 // Компенсируем гравитационные возмущения от Земли непрерывно (иначе корабль может улететь/врезаться в неб. тело)
-                Vector to_target = current_target->GetPosition() - player_ship->GetPosition(); 
+                Vector to_target = current_target->GetPosition() - player_ship->GetPosition(); // Вектор, направленный от корабля к центру спутника
                 double dist = to_target.Length();
-                double target_radius = current_target->GetRadius() + 20.0; 
+                double target_radius = current_target->GetRadius() + 20.0; // радиус идеальной круговой орбиты "парковки"
 
                 // Считаем ошибку расстояния до жесткой орбиты парковки
                 double dist_error = dist - target_radius; 
@@ -262,14 +279,14 @@ int main() {
                 Vector dir_to_target = to_target.Normalized(); 
                 Vector relative_vel = player_ship->GetVelocity() - current_target->GetVelocity();
 
-                // Пропорциональный расчет желаемой скорости сближения.
+                // Пропорциональный регулятор высоты
                 double desired_approach_v = dist_error * 5.0;
                 if ( desired_approach_v > 50.0 ) desired_approach_v = 50.0; 
                 if ( desired_approach_v < -50.0 ) desired_approach_v = -50.0; 
 
-                double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / dist );
+                double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / dist ); // Первая космическая скорость
 
-                Vector tangent( -dir_to_target.y, dir_to_target.x );
+                Vector tangent( -dir_to_target.y, dir_to_target.x ); // Вектор касательной к орбите
                 if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
                     tangent = Vector(dir_to_target.y, -dir_to_target.x);
                 }
@@ -304,20 +321,20 @@ int main() {
                 double dist_error = dist - target_radius; 
 
                 double desired_approach_v = dist_error * 1.5; // Чуть более агрессивное сближение при захвате
-                if (desired_approach_v > 80.0) desired_approach_v = 80.0; 
-                if (desired_approach_v < -15.0) desired_approach_v = -15.0; 
+                if ( desired_approach_v > 80.0 ) desired_approach_v = 80.0; 
+                if ( desired_approach_v < -15.0 ) desired_approach_v = -15.0; 
 
                 double safe_dist = dist;
-                if (safe_dist < current_target->GetRadius() + 5.0) safe_dist = current_target->GetRadius() + 5.0; 
+                if ( safe_dist < current_target->GetRadius() + 5.0 ) safe_dist = current_target->GetRadius() + 5.0; 
 
                 double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / safe_dist );
 
-                Vector tangent(-dir_to_target.y, dir_to_target.x);
-                if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) { 
-                    tangent = Vector(dir_to_target.y, -dir_to_target.x);
+                Vector tangent( -dir_to_target.y, dir_to_target.x );
+                if ( tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0 ) { 
+                    tangent = Vector( dir_to_target.y, -dir_to_target.x );
                 }
 
-                Vector ideal_rel_vel = (dir_to_target * desired_approach_v) + (tangent * v_circ);
+                Vector ideal_rel_vel = ( dir_to_target * desired_approach_v ) + ( tangent * v_circ );
                 Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
 
                 Vector vel_error = target_vel_global - player_ship->GetVelocity();
@@ -370,7 +387,7 @@ int main() {
 
         // ===== ОТРИСОВКА ИНТЕРФЕЙСА IMGUI =====
 
-        // --- ОКНО 1: ТОПЛИВО (Слева сверху) ---
+        // --- ОКНО 1: ТОПЛИВО ---
         // Фиксируем начальное положение окна в координатах x=20, y=20
         ImGui::SetNextWindowPos(ImVec2(20.f, 20.f), ImGuiCond_Once);
         // Запрещаем сворачивать, двигать мышкой и менять размер окна, чтобы оно было частью HUD игры
@@ -415,7 +432,7 @@ int main() {
             display_speed = player_ship->GetVelocity().Length();
         }
 
-        // --- ОКНО 3: ТЕЛЕМЕТРИЯ КОРАБЛЯ (Слева, под топливом) ---
+        // --- ОКНО 2: ТЕЛЕМЕТРИЯ КОРАБЛЯ (Слева, под топливом) ---
         ImGui::SetNextWindowPos(ImVec2(20.f, 100.f), ImGuiCond_Once);
         ImGuiWindowFlags telemetry_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
         
@@ -423,8 +440,8 @@ int main() {
             double current_mass = player_ship->GetMass();
             
             // Выводим нашу "умную" относительную скорость
-            ImGui::Text("Rel. Speed: %.2f m/s", display_speed);
-            ImGui::Text("Mass:       %.2f kg", current_mass);
+            ImGui::Text( "Rel. Speed: %.2f m/s", display_speed );
+            ImGui::Text( "Mass:       %.2f kg", current_mass );
         ImGui::End();
 
 
@@ -432,78 +449,78 @@ int main() {
         // Логика нумерации фаз автопилота
         std::string state_str = autopilot.GetCurrentState();
         std::string phase_text;
-        if (state_str == "Off")                phase_text = "0 - Manual Control";
-        else if (state_str == "WaitAlignment") phase_text = "1 - Await Alignment";
-        else if (state_str == "ProgradeBurn")  phase_text = "2 - Prograde Burn";
-        else if (state_str == "Coast")         phase_text = "3 - Coasting";
-        else if (state_str == "Capture")       phase_text = "4 - Capture Burn";
-        else if (state_str == "OrbitMoon")     phase_text = "5 - Orbit Stabilized";
+        if ( state_str == "Off" )                phase_text = "0 - Manual Control";
+        else if ( state_str == "WaitAlignment" ) phase_text = "1 - Await Alignment";
+        else if ( state_str == "ProgradeBurn" )  phase_text = "2 - Prograde Burn";
+        else if ( state_str == "Coast" )         phase_text = "3 - Coasting";
+        else if ( state_str == "Capture" )       phase_text = "4 - Capture Burn";
+        else if ( state_str == "OrbitMoon" )     phase_text = "5 - Orbit Stabilized";
 
-        ImGui::SetNextWindowPos(ImVec2((window_width / 2.0f) - 200.f, window_height - 75.f), ImGuiCond_Once);
-        ImGui::SetNextWindowSize(ImVec2(400.f, 0.f), ImGuiCond_Once); 
+        ImGui::SetNextWindowPos( ImVec2( ( window_width / 2.0f ) - 200.f, window_height - 75.f ), ImGuiCond_Once );
+        ImGui::SetNextWindowSize( ImVec2( 400.f, 0.f ), ImGuiCond_Once ); 
         
         ImGuiWindowFlags status_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
         
-        ImGui::Begin("Flight Status", nullptr, status_flags);
-            ImGui::Columns(2, "status_columns", true); 
+        ImGui::Begin( "Flight Status", nullptr, status_flags );
+            ImGui::Columns( 2, "status_columns", true ); 
             
-            ImGui::Text("Current Location:");
-            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "%s", current_orbit.c_str());
+            ImGui::Text( "Current Location:" );
+            ImGui::TextColored( ImVec4( 0.4f, 0.8f, 1.0f, 1.0f ), "%s", current_orbit.c_str() );
             
             ImGui::NextColumn(); 
             
-            ImGui::Text("Autopilot Phase:");
+            ImGui::Text( "Autopilot Phase:" );
             if (state_str == "Off") {
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", phase_text.c_str()); 
+                ImGui::TextColored( ImVec4( 0.6f, 0.6f, 0.6f, 1.0f ), "%s", phase_text.c_str() ); 
             } else {
-                ImGui::TextColored(ImVec4(0.1f, 0.8f, 0.1f, 1.0f), "%s", phase_text.c_str()); 
+                ImGui::TextColored( ImVec4( 0.1f, 0.8f, 0.1f, 1.0f ), "%s", phase_text.c_str() ); 
             }
             
-            ImGui::Columns(1); 
+            ImGui::Columns( 1 ); 
         ImGui::End();
 
         // --- ОКНО 2: АВТОПИЛОТ (Справа снизу) ---
         ImGui::SetNextWindowPos( ImVec2( window_width - 270.f, window_height - 180.f ), ImGuiCond_Once );
         ImGuiWindowFlags auto_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
-        ImGui::Begin("Autopilot Control", nullptr, auto_flags);
+        ImGui::Begin( "Autopilot Control", nullptr, auto_flags );
             // Чтобы не было конфликта имен переменных внутри окна, используем текущий статус автопилота
             std::string autopilot_ui_state = autopilot.GetCurrentState();
-            ImGui::Text("AI State: %s", autopilot_ui_state.c_str());
+            ImGui::Text( "AI State: %s", autopilot_ui_state.c_str() );
             ImGui::Spacing();
             
             // --- СЕКЦИЯ: ВЫБОР ЦЕЛИ ---
-            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Select Mission Target:");
+            ImGui::TextColored( ImVec4( 0.8f, 0.8f, 0.8f, 1.0f ), "Select Mission Target:");
             
             // Если автопилот запущен, блокируем выбор другой цели, чтобы не сломать полет
-            if (autopilot_ui_state != "Off" && autopilot_ui_state != "OrbitMoon") ImGui::BeginDisabled();
+            if ( autopilot_ui_state != "Off" && autopilot_ui_state != "OrbitMoon" ) ImGui::BeginDisabled();
             
-            if (ImGui::RadioButton("Moon", &target_index, 0)) {
+            if (ImGui::RadioButton( "Moon", &target_index, 0 ) ) {
                 current_target = moon;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Selene", &target_index, 1)) {
+            if ( ImGui::RadioButton( "Selene", &target_index, 1 ) ) {
                 current_target = selene;
             }
             
-            if (autopilot_ui_state != "Off" && autopilot_ui_state != "OrbitMoon") ImGui::EndDisabled();
+            if ( autopilot_ui_state != "Off" && autopilot_ui_state != "OrbitMoon" ) ImGui::EndDisabled();
             // ---------------------------------
             
             ImGui::Spacing();
             
             // --- ВОЗВРАЩАЕМ ЦВЕТА КНОПКИ (ИСПРАВЛЕНИЕ ОШИБКИ) ---
-            if (autopilot_ui_state == "Off") {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.4f, 0.4f, 1.0f)); // Серый цвет, если выключен
+            if ( autopilot_ui_state == "Off" ) {
+                ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0.4f, 0.4f, 0.4f, 1.0f ) ); // Серый цвет, если выключен
             } else {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.1f, 1.0f)); // Зеленый, если работает
+                ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0.1f, 0.6f, 0.1f, 1.0f ) ); // Зеленый, если работает
             }
 
-            if (ImGui::Button("ENGAGE AUTOPILOT", ImVec2(250.f, 40.f))) {
-                if (autopilot_ui_state == "Off" || autopilot_ui_state == "OrbitMoon") {
-                    autopilot.SetCurrentState("WaitAlignment");
+            if (ImGui::Button( "ENGAGE AUTOPILOT", ImVec2( 250.f, 40.f) ) ) {
+                if ( autopilot_ui_state == "Off" || autopilot_ui_state == "OrbitMoon" ) {
+                    autopilot.SetCurrentState( "WaitAlignment" );
                     std::cout << ">> Autopilot: ENGAGED. Waiting for phase alignment...\n";
                 } else {
-                    autopilot.SetCurrentState("Off");
+                    autopilot.SetCurrentState( "Off" );
                     std::cout << ">> Autopilot: DISABLED. Manual control.\n";
                 }
             }
@@ -517,33 +534,33 @@ int main() {
         // --- ОКНО ПОРАЖЕНИЯ (GAME OVER) ---
         if ( is_game_over ) {
             // Центрируем окно ровно по середине экрана
-            ImGui::SetNextWindowPos(ImVec2(window_width / 2.0f, window_height / 2.0f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowPos(ImVec2( window_width / 2.0f, window_height / 2.0f ), ImGuiCond_Always, ImVec2( 0.5f, 0.5f ) );
             ImGuiWindowFlags over_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
             
             // Задаем красный цвет для рамки окна, чтобы выглядело как тревога
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.0f, 0.0f, 0.95f));
-            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+            ImGui::PushStyleColor( ImGuiCol_WindowBg, ImVec4( 0.1f, 0.0f, 0.0f, 0.95f ) );
+            ImGui::PushStyleColor( ImGuiCol_Border, ImVec4( 1.0f, 0.0f, 0.0f, 1.0f ) );
 
             ImGui::Begin( "SYSTEM ALERT", nullptr, over_flags );
-                ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "%s", game_over_reason.c_str());
+                ImGui::TextColored( ImVec4( 1.0f, 0.2f, 0.2f, 1.0f ), "%s", game_over_reason.c_str() );
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
                 
                 // Добавляем кнопку выхода
-                if (ImGui::Button("EXIT SIMULATION", ImVec2(300.f, 40.f))) {
+                if ( ImGui::Button( "EXIT SIMULATION", ImVec2( 300.f, 40.f ) ) ) {
                     window.close(); // Закрываем программу
                 }
             ImGui::End();
 
-            ImGui::PopStyleColor(2);
+            ImGui::PopStyleColor( 2 );
         }
 
         window.clear( sf::Color::Black );
         renderer.Draw( window, simulation.GetUniverse() );
         
         // Рендерим окна ImGui поверх графики SFML
-        ImGui::SFML::Render(window);
+        ImGui::SFML::Render( window );
         window.display();
     }
 
