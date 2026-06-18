@@ -247,20 +247,20 @@ int main() {
             
             // --- Логика маневров ---
             if ( current_state == "Off" ) {
-                // Задаем базовую мощность двигателей для ручного управления (например, 1.5 млн Ньютон)
+                // Задаем базовую мощность двигателей для ручного управления (1.5 млн Ньютон)
                 double manual_power = 1500000.0; 
 
                 if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Up ) ) {
-                    current_thrust.y = -manual_power; // Летим вверх (в SFML ось Y направлена вниз)
+                    current_thrust.y = -manual_power; // Полёт вверх (в SFML ось Y направлена вниз)
                 }
                 if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Down ) ) {
-                    current_thrust.y = manual_power;  // Летим вниз
+                    current_thrust.y = manual_power;  // Полёт вниз
                 }
                 if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) ) {
-                    current_thrust.x = -manual_power; // Летим влево
+                    current_thrust.x = -manual_power; // Полёт влево
                 }
                 if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) {
-                    current_thrust.x = manual_power;  // Летим вправо
+                    current_thrust.x = manual_power;  // Полёт вправо
                 }
             }
             else if ( current_state == "WaitAlignment" || current_state == "Coast" ) {
@@ -286,21 +286,21 @@ int main() {
 
                 double v_circ = std::sqrt( simulation.GetkGravity() * current_target->GetMass() / dist ); // Первая космическая скорость
 
-                Vector tangent( -dir_to_target.y, dir_to_target.x ); // Вектор касательной к орбите
-                if (tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0) {
-                    tangent = Vector(dir_to_target.y, -dir_to_target.x);
+                Vector tangent( -dir_to_target.y, dir_to_target.x ); // Вектор касательной к орбите (ось вперёд-назад по курсу полёта)
+                if ( tangent.x * relative_vel.x + tangent.y * relative_vel.y < 0 ) {
+                    tangent = Vector( dir_to_target.y, -dir_to_target.x );
                 }
 
-                Vector ideal_rel_vel = (dir_to_target * desired_approach_v) + (tangent * v_circ);
+                Vector ideal_rel_vel = ( dir_to_target * desired_approach_v ) + ( tangent * v_circ );
                 Vector target_vel_global = current_target->GetVelocity() + ideal_rel_vel;
 
-                // Считаем ошибку скорости (разницу между идеальной скоростью ИИ и реальной скоростью корабля
+                // Считаем ошибку скорости (разницу между идеальной скоростью Автопилота и реальной скоростью корабля
                 Vector vel_error = target_vel_global - player_ship->GetVelocity();
                 
                 // Непрерывный мощный импульс для удержания
                 current_thrust = vel_error * 500000.0;
                 
-                // Разрешаем ИИ использовать до 100% мощности в случае экстренного срыва с орбиты
+                // Разрешаем Автопилоту использовать до 100% мощности в случае экстренного срыва с орбиты
                 if ( current_thrust.Length() > kEnginePower ) {
                     current_thrust = current_thrust.Normalized() * kEnginePower;
                 }

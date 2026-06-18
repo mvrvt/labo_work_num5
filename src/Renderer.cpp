@@ -53,7 +53,6 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
             selene_orbit.setPointCount( 200 ); 
             selene_orbit.setOrigin( {800.f, 800.f} );
             
-            // ИСПРАВЛЕНИЕ: Теперь орбита Селены привязана к центру Земли!
             selene_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
             
             selene_orbit.setFillColor( sf::Color::Transparent );
