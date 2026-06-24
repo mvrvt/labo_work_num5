@@ -1,5 +1,4 @@
 #include "Simulation.hpp"
-#include "lab2_files/ArraySequence.hpp" 
 
 Simulation::Simulation() {
     // Выделяем память под конкретный MutableArraySequence
@@ -31,14 +30,16 @@ Vector Simulation::CalculateAcceleration( const std::shared_ptr<ICelestialBody>&
         Vector direction = other->GetPosition() - current_position;
         double distance_squared = direction.LengthSquared();
 
-        if ( distance_squared < 1.0 ) distance_squared = 1.0; 
+        if ( distance_squared < 1.0 ) distance_squared = 1.0; // Защита от деления на 0
 
-        double force_magnitude = kGravity_ * ( target->GetMass() * other->GetMass() ) / distance_squared;
+        // Физика Ньютона: F = G * (m1 * m2) / r^2
+        double force_magnitude = kGravity_ * ( target->GetMass().in_kg() * other->GetMass().in_kg() ) / distance_squared;
         Vector force_vector = ( direction / direction.Length() ) * force_magnitude;
         total_force = total_force + force_vector;
     }
 
-    return total_force / target->GetMass();
+    // a = F / m
+    return total_force / target->GetMass().in_kg();
 }
 
 const double Simulation::GetkGravity() const {

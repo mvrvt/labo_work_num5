@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "ICelestialBody.hpp"
+#include "PhysicsUnits.hpp"
 #include "lab2_files/Sequence.hpp"
 #include "lab2_files/ArraySequence.hpp"
 
@@ -19,7 +20,7 @@ public:
 
 private:
     Sequence<std::shared_ptr<ICelestialBody>>* universe_;
-    const double kGravity_ = 0.1;
+    const double kGravity_ = 6.67430e-11;
 
     // Вспомогательный метод для RK4
     // Считает ускорение, которое действовало бы на target, если бы он находился в точке current_position

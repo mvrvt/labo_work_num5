@@ -1,10 +1,10 @@
 #include "Planet.hpp"
 
-Planet::Planet( const std::string& name, double mass, double radius, const Vector& position ) 
+Planet::Planet( const std::string& name, physics::Mass mass, double radius, const Vector& position ) 
     : name_( name ), mass_( mass ), radius_( radius ), position_( position ) { }
 
 std::string Planet::GetName() const { return name_; }
-double Planet::GetMass() const { return mass_; }
+physics::Mass Planet::GetMass() const { return mass_; }
 double Planet::GetRadius() const { return radius_; }
 Vector Planet::GetPosition() const { return position_; }
 

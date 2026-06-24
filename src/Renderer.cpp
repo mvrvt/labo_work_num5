@@ -1,7 +1,7 @@
 #include "Renderer.hpp"
 #include "SpaceShip.hpp"
 #include <iostream>
-#include <cmath> // Не забудь добавить для std::pow
+#include <cmath> 
 
 Renderer::Renderer() {
     if ( !earth_texture_.loadFromFile( "assets/Earth.png" ) ) {
