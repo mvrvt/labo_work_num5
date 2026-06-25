@@ -1,6 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-#include <memory> 
 #include <iostream>
 #include <cmath>
 #include <optional> 
@@ -49,7 +48,6 @@ int main() {
     auto earth = new Planet( "Earth", 5.972e24_kg, 40000000.0, Vector( center_x, center_y ) );
     auto moon = new Moon( "Moon", 7.342e22_kg, 15000000.0, Vector( center_x, center_y - 384400000.0 ), Vector( 1022.0, 0.0 ) );
     auto selene = new Moon( "Selene", 1.0e22_kg, 10000000.0, Vector( center_x, center_y + 800000000.0 ), Vector( -705.0, 0.0 ) );
-
     auto player_ship = new SpaceShip( "Soyuz", 7000.0_kg, 35000.0_kg, 5000000.0, Vector( center_x + 85000000.0, center_y ), Vector( 0.0, 2164.0 ) );
     
     simulation.AddBody( earth );
@@ -89,7 +87,6 @@ int main() {
 
     while ( window.isOpen() ) {
         while ( const std::optional<sf::Event> event = window.pollEvent() ) {
-            // Передаем события в ImGui
             ImGui::SFML::ProcessEvent( window, event.value() );
             if ( event->is<sf::Event::Closed>() ) {
                 window.close();
@@ -100,6 +97,25 @@ int main() {
 
         double real_dt = physics_clock.restart().asSeconds();
         if ( real_dt > 0.1 ) real_dt = 0.1; 
+
+        // ===================================================================
+        // === ЗАЩИТА ТОПЛИВА (PHYSICAL TIME WARP LIMIT) ===
+        // Ограничиваем ускорение до 500x во время ручных маневров
+        // ===================================================================
+        bool manual_override = false;
+        if ( autopilot.GetCurrentState() == "Off" && !is_game_over ) {
+            if ( sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Up ) ||
+                 sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Down ) ||
+                 sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Left ) ||
+                 sf::Keyboard::isKeyPressed( sf::Keyboard::Key::Right ) ) {
+                
+                // Если варп больше 500х, сбрасываем его до комфортных 500х
+                if (time_warp > 500.0f) {
+                    time_warp = 500.0f; 
+                }
+                manual_override = true;
+            }
+        }
 
         if ( !is_game_over ) {
             double sim_dt = real_dt * time_warp; 
@@ -135,7 +151,6 @@ int main() {
                     double park_radius = current_target->GetRadius() * 2.0; 
                     double dist_error = dist - park_radius; 
                     
-                    // МЁРТВАЯ ЗОНА: Не тратим топливо, если орбита стабильна (+- 500 км)
                     if ( std::abs(dist_error) < 500000.0 ) {
                         current_thrust = Vector(0,0);
                     } else {
@@ -171,11 +186,9 @@ int main() {
 
                     double target_radius = current_target->GetRadius() * 2.0; 
 
-                    // ЭКОНОМИЯ ТОПЛИВА: Пока мы далеко от перицентра, просто падаем под гравитацией
                     if ( dist > target_radius * 1.5 ) {
                         current_thrust = Vector(0,0);
                     } else {
-                        // БЬЁМ ПО ТОРМОЗАМ: Выход на орбиту (Retrograde burn)
                         Vector dir_to_target = to_target.Normalized(); 
                         double dist_error = dist - target_radius; 
                         double desired_approach_v = dist_error * 0.1; 
@@ -247,7 +260,16 @@ int main() {
         ImGuiWindowFlags time_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
         ImGui::Begin("Time Control", nullptr, time_flags);
             ImGui::Text("Simulation Speed:");
+            
+            if (manual_override) {
+                ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "[ PHYSICAL WARP: MAX 500x ]");
+                ImGui::BeginDisabled();
+            }
+            
             ImGui::SliderFloat("##TimeWarp", &time_warp, 1.0f, 1000000.0f, "%.0f x", ImGuiSliderFlags_Logarithmic);
+            
+            if (manual_override) ImGui::EndDisabled();
+            
         ImGui::End();
 
         std::string current_orbit;
