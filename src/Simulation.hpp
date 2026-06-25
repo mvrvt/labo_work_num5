@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include "ICelestialBody.hpp"
 #include "PhysicsUnits.hpp"
 #include "lab2_files/Sequence.hpp"
@@ -11,18 +10,18 @@ public:
     Simulation();
     ~Simulation(); 
 
-    void AddBody( std::shared_ptr<ICelestialBody> body ); // Добавить тело во вселенную
-    void Update( double dt );                             // Шаг физики
+    void AddBody( ICelestialBody* body ); // Добавить тело во вселенную
+    void Update( double dt );             // Шаг физики
 
     const double GetkGravity() const;
 
-    [[nodiscard]] Sequence<std::shared_ptr<ICelestialBody>>* GetUniverse() const;
+    [[nodiscard]] Sequence<ICelestialBody*>* GetUniverse() const;
 
 private:
-    Sequence<std::shared_ptr<ICelestialBody>>* universe_;
+    Sequence<ICelestialBody*>* universe_;
     const double kGravity_ = 6.67430e-11;
 
     // Вспомогательный метод для RK4
     // Считает ускорение, которое действовало бы на target, если бы он находился в точке current_position
-    [[nodiscard]] Vector CalculateAcceleration( const std::shared_ptr<ICelestialBody>& target, const Vector& current_position ) const;
+    [[nodiscard]] Vector CalculateAcceleration( const ICelestialBody* target, const Vector& current_position ) const;
 };

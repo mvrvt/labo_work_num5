@@ -46,18 +46,18 @@ int main() {
     double center_x = 0.0;
     double center_y = 0.0;
 
-    auto earth = std::make_shared<Planet>( "Earth", 5.972e24_kg, 40000000.0, Vector( center_x, center_y ) );
-    auto moon = std::make_shared<Moon>( "Moon", 7.342e22_kg, 15000000.0, Vector( center_x, center_y - 384400000.0 ), Vector( 1022.0, 0.0 ) );
-    auto selene = std::make_shared<Moon>( "Selene", 1.0e22_kg, 10000000.0, Vector( center_x, center_y + 800000000.0 ), Vector( -705.0, 0.0 ) );
+    auto earth = new Planet( "Earth", 5.972e24_kg, 40000000.0, Vector( center_x, center_y ) );
+    auto moon = new Moon( "Moon", 7.342e22_kg, 15000000.0, Vector( center_x, center_y - 384400000.0 ), Vector( 1022.0, 0.0 ) );
+    auto selene = new Moon( "Selene", 1.0e22_kg, 10000000.0, Vector( center_x, center_y + 800000000.0 ), Vector( -705.0, 0.0 ) );
 
-    auto player_ship = std::make_shared<SpaceShip>( "Soyuz", 7000.0_kg, 35000.0_kg, 5000000.0, Vector( center_x + 85000000.0, center_y ), Vector( 0.0, 2164.0 ) );
+    auto player_ship = new SpaceShip( "Soyuz", 7000.0_kg, 35000.0_kg, 5000000.0, Vector( center_x + 85000000.0, center_y ), Vector( 0.0, 2164.0 ) );
     
     simulation.AddBody( earth );
     simulation.AddBody( moon );
     simulation.AddBody( selene );
     simulation.AddBody( player_ship );
 
-    std::shared_ptr<ICelestialBody> current_target = moon; 
+    ICelestialBody* current_target = moon; 
     int target_index = 0; 
 
     Renderer renderer;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <memory>
 #include "ICelestialBody.hpp"
 #include "lab2_files/Sequence.hpp"
 
@@ -12,10 +11,10 @@ public:
 
     Renderer();
     // Передаем указатель на изменяемый Sequence, чтобы избежать конфликтов с константностью методов ЛР-2
-    void Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelestialBody>>* universe ) const;
+    void Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* universe ) const;
 
 private:
-    sf::Texture earth_texture_; // Поле для хранения текстуры Земли 
-    sf::Texture moon_texture_;  // Поле для изображения Луны
+    sf::Texture earth_texture_;
+    sf::Texture moon_texture_;
     sf::Texture selene_texture_;
 };

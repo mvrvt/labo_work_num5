@@ -2,28 +2,32 @@
 
 Simulation::Simulation() {
     // Выделяем память под конкретный MutableArraySequence
-    universe_ = new MutableArraySequence<std::shared_ptr<ICelestialBody>>();
+    universe_ = new MutableArraySequence<ICelestialBody*>();
 }
 
 Simulation::~Simulation() {
+    for ( int i = 0; i < universe_->GetLength(); ++i ) {
+        delete universe_->Get( i );
+    }
+
     delete universe_;
 }
 
-void Simulation::AddBody( std::shared_ptr<ICelestialBody> body ) {
+void Simulation::AddBody( ICelestialBody* body ) {
     universe_->Append( body ); 
 }
 
-Sequence<std::shared_ptr<ICelestialBody>>* Simulation::GetUniverse() const {
+Sequence<ICelestialBody*>* Simulation::GetUniverse() const {
     return universe_;
 }
 
-Vector Simulation::CalculateAcceleration( const std::shared_ptr<ICelestialBody>& target, const Vector& current_position ) const {
+Vector Simulation::CalculateAcceleration( const ICelestialBody* target, const Vector& current_position ) const {
     // Реализован закон всемирного тяготения Ньютона
 
     Vector total_force = target->GetThrust();
 
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
-        std::shared_ptr<ICelestialBody> other = universe_->Get( i );
+        ICelestialBody* other = universe_->Get( i );
         
         if ( target == other ) continue;
 
@@ -56,7 +60,7 @@ void Simulation::Update( double dt ) {
 
     // Шаг №1. Вычисление новых состояний методом RK4
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
-        std::shared_ptr<ICelestialBody> body = universe_->Get( i );
+        ICelestialBody* body = universe_->Get( i );
 
         if ( body->IsStatic() ) {
             new_positions.Append( body->GetPosition() );

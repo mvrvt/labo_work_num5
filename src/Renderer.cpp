@@ -20,12 +20,12 @@ Renderer::Renderer() {
     selene_texture_.setSmooth( true );
 }
 
-void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelestialBody>>* universe ) const {
+void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* universe ) const {
     if (!universe) return; 
 
     // 1. Сначала рисуем визуальные границы орбит и гравитации
     for ( int i = 0; i < universe->GetLength(); ++i ) {
-        std::shared_ptr<ICelestialBody> body = universe->Get( i );
+        ICelestialBody* body = universe->Get( i );
         
         if ( body->GetName() == "Earth" ) {
             // Траектория орбиты Луны
@@ -84,7 +84,7 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<std::shared_ptr<ICelesti
 
     // 2. Затем рисуем сами небесные тела и корабль
     for ( int i = 0; i < universe->GetLength(); ++i ) {
-        std::shared_ptr<ICelestialBody> body = universe->Get( i );
+        ICelestialBody* body = universe->Get( i );
 
         sf::CircleShape shape( static_cast<float>( body->GetRadius() ) );
         shape.setOrigin( {static_cast<float>( body->GetRadius() ), static_cast<float>( body->GetRadius() )} );
