@@ -91,3 +91,4 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* univer
     }
 }
 
+// black man
