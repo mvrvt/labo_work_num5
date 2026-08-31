@@ -27,3 +27,4 @@ private:
     Vector        position_;
     Vector        velocity_;
 };
+

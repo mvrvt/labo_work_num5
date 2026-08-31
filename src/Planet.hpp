@@ -4,11 +4,9 @@
 #include "PhysicsUnits.hpp"
 #include <string>
 
-// Planet наследуется от интерфейса ICelestialBody 
 class Planet : public ICelestialBody {
 public:
-    // Конструктор 
-    Planet( const std::string& name, physics::Mass mass, double radius, const Vector& position );
+    Planet( const std::string& name, physics::Mass mass, double radius, const Vector& position, const Vector& velocity = Vector(0.0, 0.0), bool is_static = true );
 
     [[nodiscard]] std::string   GetName()     const override;
     [[nodiscard]] physics::Mass GetMass()     const override; 
@@ -28,4 +26,6 @@ private:
     physics::Mass mass_;
     double        radius_;
     Vector        position_;
+    Vector        velocity_;
+    bool          is_static_; 
 };

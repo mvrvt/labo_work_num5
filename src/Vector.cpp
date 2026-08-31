@@ -1,5 +1,15 @@
 #include "Vector.hpp"
-#include <stdexcept> // Для исключений
+#include <stdexcept> 
+
+Vector::Vector() {
+    x = 0;
+    y = 0;
+}
+
+Vector::Vector(double x_val, double y_val) {
+    x = x_val;
+    y = y_val;
+}
 
 Vector Vector::operator+( const Vector& other ) const {
     return { x + other.x, y + other.y };

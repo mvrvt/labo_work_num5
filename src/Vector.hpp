@@ -8,14 +8,16 @@ struct Vector {
     double x;
     double y;
 
+    Vector();
+
     // Конструктор по умолчанию и с параметрами
-    Vector( double x = 0.0, double y = 0.0 ) : x( x ), y( y ) { }
+    Vector( double x = 0.0, double y = 0.0 );
 
     // Операции с векторами 
     [[nodiscard]] Vector operator+( const Vector& other ) const;
     [[nodiscard]] Vector operator-( const Vector& other ) const;
-    [[nodiscard]] Vector operator*( double scalar )         const;
-    [[nodiscard]] Vector operator/( double scalar )         const;
+    [[nodiscard]] Vector operator*( double scalar )       const;
+    [[nodiscard]] Vector operator/( double scalar )       const;
     
     [[nodiscard]] double Length() const; 
 

@@ -1,7 +1,6 @@
 #include "Simulation.hpp"
 
 Simulation::Simulation() {
-    // Выделяем память под конкретный MutableArraySequence
     universe_ = new MutableArraySequence<ICelestialBody*>();
 }
 
@@ -9,7 +8,6 @@ Simulation::~Simulation() {
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
         delete universe_->Get( i );
     }
-
     delete universe_;
 }
 
@@ -22,27 +20,21 @@ Sequence<ICelestialBody*>* Simulation::GetUniverse() const {
 }
 
 Vector Simulation::CalculateAcceleration( const ICelestialBody* target, const Vector& current_position ) const {
-    // Реализован закон всемирного тяготения Ньютона
-
     Vector total_force = target->GetThrust();
 
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
         ICelestialBody* other = universe_->Get( i );
-        
         if ( target == other ) continue;
 
         Vector direction = other->GetPosition() - current_position;
         double distance_squared = direction.LengthSquared();
+        if ( distance_squared < 1.0 ) distance_squared = 1.0; 
 
-        if ( distance_squared < 1.0 ) distance_squared = 1.0; // Защита от деления на 0
-
-        // Физика Ньютона: F = G * (m1 * m2) / r^2
         double force_magnitude = kGravity_ * ( target->GetMass().in_kg() * other->GetMass().in_kg() ) / distance_squared;
         Vector force_vector = ( direction / direction.Length() ) * force_magnitude;
         total_force = total_force + force_vector;
     }
 
-    // a = F / m
     return total_force / target->GetMass().in_kg();
 }
 
@@ -51,6 +43,7 @@ const double Simulation::GetkGravity() const {
 }
 
 void Simulation::Update( double dt ) {
+    // Исключительно собственные коллекции из ЛР-2 (ПАТД)
     MutableArraySequence<Vector> new_positions;
     MutableArraySequence<Vector> new_velocities;
 
@@ -58,7 +51,7 @@ void Simulation::Update( double dt ) {
         universe_->Get( i )->Tick( dt );
     }
 
-    // Шаг №1. Вычисление новых состояний методом RK4
+    // Метод RK4
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
         ICelestialBody* body = universe_->Get( i );
 
@@ -93,7 +86,6 @@ void Simulation::Update( double dt ) {
         new_velocities.Append( new_vel );
     }
 
-    // Шаг №2: Применение состояний
     for ( int i = 0; i < universe_->GetLength(); ++i ) {
         universe_->Get( i )->UpdateState( new_positions.Get( i ), new_velocities.Get( i ) );
     }

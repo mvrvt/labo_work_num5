@@ -1,34 +1,23 @@
 #include "Renderer.hpp"
-#include "SpaceShip.hpp"
 #include <iostream>
-#include <cmath> 
 
 Renderer::Renderer() {
-    if ( !earth_texture_.loadFromFile( "assets/Earth.png" ) ) {
-        std::cerr << "Error: Could not find assets/Earth.png" << std::endl;
-    }
+    if ( !earth_texture_.loadFromFile( "assets/Earth.png" ) ) std::cerr << "Error loading Earth\n";
     earth_texture_.setSmooth( true ); 
-
-    if ( !moon_texture_.loadFromFile( "assets/Moon.png" ) ) {
-        std::cerr << "Error: Could not find assets/Moon.png" << std::endl;
-    }
+    if ( !moon_texture_.loadFromFile( "assets/Moon.png" ) ) std::cerr << "Error loading Moon\n";
     moon_texture_.setSmooth( true );
-
-    if ( !selene_texture_.loadFromFile( "assets/Selene(Pluto).png" ) ) {
-        std::cerr << "Error: couldn't find assets/Selene(Pluto).png" << std::endl;
-    }
+    if ( !selene_texture_.loadFromFile( "assets/Selene(Pluto).png" ) ) std::cerr << "Error loading Selene\n";
     selene_texture_.setSmooth( true );
 }
 
 void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* universe ) const {
     if (!universe) return; 
 
-    // 1. Сначала рисуем визуальные границы орбит и гравитации
+    // 1. Границы орбит и SOI (рисуются только в Симуляции 1)
     for ( int i = 0; i < universe->GetLength(); ++i ) {
         ICelestialBody* body = universe->Get( i );
         
         if ( body->GetName() == "Earth" ) {
-            // Траектория орбиты Луны
             sf::CircleShape moon_orbit( 350.f );
             moon_orbit.setPointCount( 150 ); 
             moon_orbit.setOrigin( {350.f, 350.f} );
@@ -38,7 +27,6 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* univer
             moon_orbit.setOutlineColor( sf::Color(100, 100, 100, 100) ); 
             window.draw( moon_orbit );
             
-            // Траектория парковочной орбиты Корабля
             sf::CircleShape ship_orbit( 70.f );
             ship_orbit.setPointCount( 100 ); 
             ship_orbit.setOrigin( {70.f, 70.f} );
@@ -48,13 +36,10 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* univer
             ship_orbit.setOutlineColor( sf::Color(100, 255, 100, 100) ); 
             window.draw( ship_orbit );
 
-            // Траектория орбиты Селены
             sf::CircleShape selene_orbit( 800.f );
             selene_orbit.setPointCount( 200 ); 
             selene_orbit.setOrigin( {800.f, 800.f} );
-            
             selene_orbit.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
-            
             selene_orbit.setFillColor( sf::Color::Transparent );
             selene_orbit.setOutlineThickness( 1.f );
             selene_orbit.setOutlineColor( sf::Color( 100, 100, 100, 100 ) ); 
@@ -70,19 +55,18 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* univer
             window.draw( capture_zone );
         } 
         else if ( body->GetName() == "Selene" ) {
-            // Динамический радиус зоны влияния (теперь будет около 80 пикселей)
             double soi = 800.0 * std::pow(300000.0 / 100000000.0, 0.4); 
             sf::CircleShape soi_shape( static_cast<float>(soi) );
             soi_shape.setOrigin( {static_cast<float>(soi), static_cast<float>(soi)} );
             soi_shape.setPosition( {static_cast<float>(body->GetPosition().x), static_cast<float>(body->GetPosition().y)} );
-            soi_shape.setFillColor( sf::Color( 100, 50, 150, 40 ) ); // Фиолетовая зона
+            soi_shape.setFillColor( sf::Color( 100, 50, 150, 40 ) ); 
             soi_shape.setOutlineThickness( 1.f );
             soi_shape.setOutlineColor( sf::Color( 150, 100, 200, 120 ) );
             window.draw( soi_shape );
         }
     }
 
-    // 2. Затем рисуем сами небесные тела и корабль
+    // 2. Рисуем тела. Адаптировано для Симуляции 1 и 2!
     for ( int i = 0; i < universe->GetLength(); ++i ) {
         ICelestialBody* body = universe->Get( i );
 
@@ -90,16 +74,17 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* univer
         shape.setOrigin( {static_cast<float>( body->GetRadius() ), static_cast<float>( body->GetRadius() )} );
         shape.setPosition( {static_cast<float>( body->GetPosition().x ), static_cast<float>( body->GetPosition().y )} );
 
-        if ( body->GetName() == "Earth" ) {
+        std::string name = body->GetName();
+        // Красивое распределение текстур для планет N-body системы
+        if ( name == "Earth" || name == "Alpha" ) {
             shape.setTexture( &earth_texture_ );
-        } else if ( body->GetName() == "Moon" ) {
+        } else if ( name == "Moon" || name == "AlphaMoon" || name == "BetaMoon" || name == "Omega (Outer)" ) {
             shape.setTexture( &moon_texture_ );
-        } else if ( body->GetName() == "Selene" ) {
+        } else if ( name == "Selene" || name == "Beta" ) {
             shape.setFillColor( sf::Color( 180, 150, 220 ) );
             shape.setTexture( &selene_texture_ );
         } else { 
-            // Корабль (красная точка)
-            shape.setFillColor( sf::Color::Red );
+            shape.setFillColor( sf::Color::Red ); // Корабль
         }
 
         window.draw( shape );
