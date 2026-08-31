@@ -90,3 +90,4 @@ void Renderer::Draw( sf::RenderWindow& window, Sequence<ICelestialBody*>* univer
         window.draw( shape );
     }
 }
+

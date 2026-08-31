@@ -25,3 +25,4 @@ void Planet::UpdateState( const Vector& new_position, const Vector& new_velocity
         velocity_ = new_velocity;
     }
 }
+    
